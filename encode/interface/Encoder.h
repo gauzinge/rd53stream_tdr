@@ -46,7 +46,6 @@ class Encoder{
         int find_last_qrow(IntMatrix & matrix, uint32_t ccol);
 
     protected:
-        virtual void qcore_control_plot(vector<bool> hitmap,vector<bool> compressed_hitmap);
         uint32_t col_factor;
         uint32_t row_factor;
 

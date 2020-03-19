@@ -47,8 +47,8 @@ $(ODIR_UTIL)/%.o: $(SRCDIR_UTIL)/%.cc
 
 .PHONY: clean
 
-itrate: $(OBJ_ENC) $(OBJ_UTIL)
-	$(CC) scripts/ITRate.cc -o $(BINDIR)/itrate $^ $(CFLAGS) $(LIBS)
+stream: $(OBJ_ENC) $(OBJ_UTIL)
+	$(CC) scripts/MakeStream.cc -o $(BINDIR)/makestream $^ $(CFLAGS) $(LIBS)
 simple: $(OBJ_DEC) $(OBJ_UTIL)
 	$(CC) scripts/RunSimpleDecoder.cc -o $(BINDIR)/runsimple $^ $(CFLAGS) $(LIBS)
 

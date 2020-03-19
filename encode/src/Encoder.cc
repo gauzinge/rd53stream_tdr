@@ -27,7 +27,12 @@ int Encoder::find_last_qrow(IntMatrix & matrix, uint32_t ccol){
 
 
 
-
+/**
+ * Encode the 16-bit hitmap of using tree-based encoding
+ * 
+ * The output will be between 4 and 30 bits:
+ * [Row OR (1-2 bits)][Row 1 (3-14 bits)][Row 2 (3-14 bits)]
+ */
 vector<bool> Encoder::encode_hitmap(vector<bool> hitmap) {
     assert(hitmap.size()==16);
 
@@ -52,38 +57,42 @@ vector<bool> Encoder::encode_hitmap(vector<bool> hitmap) {
         }
     }
 
-    // Compress the components
+    // Compress the components separately
+    // using lookup tables
     vector<bool> row_or_enc = enc2(row_or);
     vector<bool> row1_enc = enc8(row1);
     vector<bool> row2_enc = enc8(row2);
 
+    // Merge together
     vector<bool> encoded_hitmap;
     encoded_hitmap.reserve(row_or_enc.size() + row1_enc.size() + row2_enc.size());
     encoded_hitmap.insert(encoded_hitmap.end(), row_or_enc.begin(), row_or_enc.end());
     encoded_hitmap.insert(encoded_hitmap.end(), row1_enc.begin(), row1_enc.end());
     encoded_hitmap.insert(encoded_hitmap.end(), row2_enc.begin(), row2_enc.end());
 
-    this->qcore_control_plot(hitmap, encoded_hitmap);
-
     return encoded_hitmap;
 };
 
-void Encoder::qcore_control_plot(vector<bool> hitmap, vector<bool> compressed_hitmap) {
-    return;
-}
-
+/**
+ * Build QCore objects from a pixel matrix
+ */
 vector<QCore> Encoder::qcores(IntMatrix & matrix, int event, int module) {
-    uint32_t nccol = floor(matrix.at(0).size() / this->col_factor);
-
     vector<QCore> qcores;
+    
+    // Loop over core columns (ccol)
+    uint32_t nccol = floor(matrix.at(0).size() / this->col_factor);
     for (uint32_t ccol = 0; ccol < nccol ; ccol++){
         int qcrow_prev = -2;
         int last_qcrow = find_last_qrow(matrix, ccol);
         if(last_qcrow<0) {
             continue;
         }
+
+        // Loop over quarter core rows (qcrow)
         for(uint32_t qcrow=0; qcrow<=last_qcrow; qcrow++ ){
-            // Construct qcore
+            // The native representation of the QCore is
+            // a 16-bit vector of ADC values, which are
+            // simply copied from the matrix
             vector<ADC> qcore_adcs;
             qcore_adcs.reserve(16);
             bool any_nonzero = false;
@@ -95,9 +104,14 @@ vector<QCore> Encoder::qcores(IntMatrix & matrix, int event, int module) {
                 }
             }
             assert(qcore_adcs.size() == 16);
+
+            // Ignore qcores that do not have any hits
             if(!any_nonzero) {
                 continue;
             }
+
+            // Meta information about the qcore
+            // necessary for stream building 
             bool isneighbour = (qcrow_prev + 1 == qcrow);
             qcrow_prev = qcrow;
             bool islast = (qcrow == last_qcrow);
