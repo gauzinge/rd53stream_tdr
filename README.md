@@ -39,13 +39,13 @@ The output will be written to `stream.txt`. The first few lines of the file will
 Each line represents a 64-bit AURORA block (the 2-bit AURORA header has been omitted here). To make the files more human-readable, the bits are interspersed with the symbols "|" which indicates a new quarter core starting, and ":", which indicates a new field inside a quarter core. These symbols are only meant for human consumption and are ignored by the decoder! The start of the stream can thus be decomposed as follows:
 
 ```
-110101001 -> new stream bit "1" + 8-bit event identifier "10101001"
-| -> start of first qcore
-110101 -> Column address of the qcore (Always 6 bits)
-10 -> islast and isneighbour bits
-10010001 -> row address (always 8 bits, omitted if isneighbour=True)
-0110000 -> encoded hitmap (variable size)
-11110101 -> ToTs for hit pixels (2 pixels * 4 bits / pixel)
+110101001   -> new stream bit "1" + 8-bit event identifier "10101001"
+|           -> start of first qcore
+110101      -> Column address of the qcore (Always 6 bits)
+10          -> islast and isneighbour bits
+10010001    -> row address (always 8 bits, omitted if isneighbour=True)
+0110000     -> encoded hitmap (variable size)
+11110101    -> ToTs for hit pixels (2 pixels * 4 bits / pixel)
 
 ...(and so on)...
 ```
