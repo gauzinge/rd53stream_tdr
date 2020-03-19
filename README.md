@@ -53,8 +53,6 @@ Each line represents a 64-bit AURORA block (the 2-bit AURORA header has been omi
 It is important to note that the stream building currently has limitations:
 * Each module is treated separately, ratther than correctly accounting for the module -> ROC mapping
 * event numbers, as well as row and column identifiers are arbitrary placeholder values
-* The stream decoder is not yet fully validated.
-
 
 ## Decoder example 
 
@@ -73,6 +71,6 @@ make py
 ./python/run_simple_decoder.py example/stream.txt
 ```
 
-In both cases, the same underlying C++ code is executed. Of course, you can also run the decoder on the `stream.txt` file created in the encoding step above.
+In both cases, the same underlying C++ code is executed. Currently, the code outputs a bunch of debugging statements as it parses the stream. The decoder is not fully validated, yet. Of course, you can also run the decoder on the `stream.txt` file created in the encoding step above.
 
 Python bindings for modules other than the simple decoder will be added soon.
