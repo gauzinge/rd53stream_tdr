@@ -3,10 +3,9 @@
 #include <vector>
 #include <stdint.h>
 #include <assert.h>
+#include <util/IntMatrix.h>
 using namespace std;
 
-typedef uint32_t ADC;
-typedef vector<vector<ADC>> IntMatrix;
 class Encoder;
 
 class QCore{
