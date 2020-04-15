@@ -6,6 +6,7 @@
 #include<encode/interface/Encoder.h>
 #include<util/Util.h>
 #include<util/IntMatrix.h>
+#include<util/ChipIdentifier.h>
 
 using namespace std;
 
