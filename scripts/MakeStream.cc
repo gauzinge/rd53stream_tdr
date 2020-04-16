@@ -1,29 +1,29 @@
 #include <iostream>
-#include<TFile.h>
-#include<TTreeReader.h>
-#include<TTreeReaderArray.h>
-#include<include/cxxopts.hpp>
-#include<encode/interface/Encoder.h>
-#include<util/Util.h>
-#include<util/IntMatrix.h>
-#include<util/ChipIdentifier.h>
+#include <TFile.h>
+#include <TTreeReader.h>
+#include <TTreeReaderArray.h>
+//#include <include/cxxopts.hpp>
+#include <encode/interface/Encoder.h>
+#include <util/Util.h>
+#include <util/IntMatrix.h>
+#include <util/ChipIdentifier.h>
 
 using namespace std;
 
 //IntMatrix empty_matrix(uint32_t nrows, uint32_t ncols){
-    //IntMatrix matrix;
-    //matrix.reserve(nrows);
-    //for (uint32_t r = 0; r < nrows; r++) {
-            //vector<ADC> row;
-            //row.reserve(ncols);
-            //for (uint32_t c = 0; c < ncols; c++) {
-                  //row.push_back(0);
-            //}
-            //assert(row.size()==ncols);
-            //matrix.push_back(row);
-    //}
-    //assert(matrix.size()==nrows);
-    //return matrix;
+//IntMatrix matrix;
+//matrix.reserve(nrows);
+//for (uint32_t r = 0; r < nrows; r++) {
+//vector<ADC> row;
+//row.reserve(ncols);
+//for (uint32_t c = 0; c < ncols; c++) {
+//row.push_back(0);
+//}
+//assert(row.size()==ncols);
+//matrix.push_back(row);
+//}
+//assert(matrix.size()==nrows);
+//return matrix;
 //}
 
 //IntMatrix getChipMatrix(uint32_t chip, IntMatrix theMatrix)
@@ -36,24 +36,24 @@ using namespace std;
  */
 //void convert_address(uint32_t& row, uint32_t& col)
 //{
-    //if(row & 1 == 0)//this is a simple check if row is an even number, alternative (row%2 == 0)
-    //{
-        //row/=2;
-        //col *=2;
-        //col+=1;
-    //}
-    //else// odd row number
-    //{
-        //row-=1;
-        //row/=2;
-        //col*=2;
-    //}
+//if(row & 1 == 0)//this is a simple check if row is an even number, alternative (row%2 == 0)
+//{
+//row/=2;
+//col *=2;
+//col+=1;
+//}
+//else// odd row number
+//{
+//row-=1;
+//row/=2;
+//col*=2;
+//}
 //}
 
 
 /**
  * Write a vector of bits to the stream output file.
- * 
+ *
  * The stream is formatted into AURORA blocks of 64 bits length.
  * Each block is written into a new line of the output file.
  */
@@ -82,7 +82,7 @@ void write_bits(ofstream & f, bool bit, int & bits_written) {
 }
 
 
-/** 
+/**
  * Given a set of QCores, write the formatted data stream to file.
  */
 void stream_to_file(vector<QCore> & qcores, bool tot){
@@ -130,18 +130,15 @@ void stream_to_file(vector<QCore> & qcores, bool tot){
 }
 
 int main(int argc, char *argv[]){
-    cxxopts::Options options("ITRate", "One line description of MyProgram");
-    options.add_options()
-    ("f,file", "Input file",cxxopts::value<string>())
-    //("b,barrel", "Look at barrel",cxxopts::value<bool>())
-    //("e,endcap", "Look at endcap",cxxopts::value<bool>())
-    //("r,ringlayer", "Ring or layer to consider",cxxopts::value<int>())
-    //("d,diskladder", "Disk or ladder to consider",cxxopts::value<int>())
-    ("n,nevents", "Number of events to process",cxxopts::value<int>())
-    ;
-    auto opts = options.parse(argc, argv);
 
-    TFile * file = new TFile(opts["file"].as<string>().c_str());
+    if(argc ==1)
+        std::cout << "please call like so: bin/makestream filepath nevents" << std::endl;
+    if(argc != 3)
+        std::cout << "please call like so: bin/makestream filepath nevents" << std::endl;
+
+    std::string filename = argv[1];
+
+    TFile * file = new TFile(filename.c_str());
     TTreeReader reader("BRIL_IT_Analysis/Digis", file);
     TTreeReaderArray<bool> trv_barrel(reader, "barrel");
     TTreeReaderArray<uint32_t> trv_module(reader, "module");
@@ -153,21 +150,13 @@ int main(int argc, char *argv[]){
 
     uint32_t nrows_module = 672;
     uint32_t ncols_module = 864;
-    int nevents =  opts["nevents"].as<int>();
-    //int want_ring = opts["ringlayer"].as<int>();
-    //int want_disk = opts["diskladder"].as<int>();
-
-    //bool want_barrel = opts["barrel"].as<bool>();
-    //bool want_endcap = opts["endcap"].as<bool>();
-
-    //if(want_barrel and want_endcap){
-        //throw "Cannot do barrel and endcap at the same time.";
-    //}
+    int nevents = 0;
 
     uint32_t nevent = 0;
 
     // 2D matrices of pixel ADCs, key == chip identifier
-    map<ChipIdentifier, IntMatrix> matrices;
+    map<ChipIdentifier, IntMatrix> module_matrices;
+    map<ChipIdentifier, IntMatrix> chip_matrices;
     // QCore objects per module, key == chip identifier
     map<ChipIdentifier, vector<QCore>> qcores;
 
@@ -175,7 +164,7 @@ int main(int argc, char *argv[]){
     Encoder enc;
 
     // Event loop
-    while (reader.Next()) 
+    while (reader.Next())
     {
         if(nevent > nevents){
             break;
@@ -183,73 +172,71 @@ int main(int argc, char *argv[]){
         uint32_t ientry=0;
 
         // Read all data for this event and construct
-        // 2D matrices of pixel ADCs **per module**
 
         // module loop witin event
-        for( auto imod : trv_module) 
+        // this has one entry for each hit (row, col, adc) touple
+        for( auto imod : trv_module)
         {
             bool barrel = trv_barrel.At(ientry);
             uint32_t diskladder = trv_diskladder.At(ientry);
             uint32_t ringlayer = trv_ringlayer.At(ientry);
             uint32_t module = imod;
 
-            // if it's barrel or not barrel but disk < 9 (TFPX) increment ientry and continue so only consider TEPX
-            
+            // if it's barrel or not barrel but disk < 9 (TFPX) increment ientry (consider next digi) and continue so only consider TEPX
             if(barrel ||(!barrel && diskladder < 9)){
                 ientry++;
                 continue;
             }
 
-            //in this case it is a TEPX module so declare an empty matrix with module dimensions
-            IntMatrix tmp_matrix(nrows_module, ncols_module);
+            //generate a temporary chip identifier with fake chip id 99 since for the moment we just care for the module
+            ChipIdentifier tmp_id(diskladder, ringlayer, module, 99);
+            //check if that module is already in our map
+            auto matrices_iterator = module_matrices.find(tmp_id);
+            if(matrices_iterator == std::end(module_matrices)) // not found
+            {
+                //insert an empty IntMatrix
+                IntMatrix tmp_matrix(nrows_module, ncols_module);
+                //module_matrices[tmp_id] = tmp_matrix;
+                module_matrices.emplace(tmp_id, tmp_matrix);
+            }
 
+            //in all other cases the Intmatrix for that module exists already
             //get the row, col and ADC (attention, sensor row and column address) for the current module
             uint32_t row = trv_row.At(ientry);
             uint32_t col = trv_col.At(ientry);
             uint32_t adc = trv_adc.At(ientry);
             //some sanity checks
-            assert(row<nrows);
-            assert(col<ncols);
             //convert to module address
-            convert_address(row, col);
-
-            tmp_matrix.convertPitch_andFill(row, col, adc);
+            module_matrices.at(tmp_id).convertPitch_andFill(row, col, adc);
             ientry++;
-        }
+        }//end module loop
 
         // Loop over modules and create qcores for each module
-        cout << "Event " << nevent << endl;
-        int nqcore = 0;
-        for(auto pair : matrices){
-            vector<QCore> tmp = enc.qcores(pair.second, nevent, pair.first);
-            //for(auto const q : tmp){
-                //nqcore++;
-
-                //int bits = 2;
-                //if(not q.isneighbour) bits += 8;
-                //if(q.islast) bits += 6;
-                //bits+=q.encoded_hitmap.size();
-
-                //int nhits = 0;
-                //for(auto bit : q.hitmap) {
-                    //if(bit) nhits++;
-                //}
-
-                //bool row_1_hit = false;
-                //bool row_2_hit = false;
-                //for(int ipix=0; ipix<8; ipix++) {
-                    //row_1_hit |= q.hitmap.at(ipix);
-                    //row_2_hit |= q.hitmap.at(8+ipix);
-                //}
-                //int n_rows = 0;
-                //if(row_1_hit) n_rows++;
-                //if(row_2_hit) n_rows++;
-            //}
-            qcores[pair.first].insert(qcores[pair.first].end(), tmp.begin(), tmp.end());
+        std::cout << "Finished reading full data for Event " << nevent << " from the tree; found " << module_matrices.size() << " modules for TEPX" << std::endl;
+        //now split the tmp_matrix in 4 chip matrices, construct the Chip identifier object and insert into the matrices map
+        for(auto matrix : module_matrices)
+        {
+            for(uint32_t chip=0; chip < 4; chip++)
+            {
+                ChipIdentifier chipId = matrix.first;
+                chipId.mchip=chip;
+                IntMatrix tmp_matrix = matrix.second.submatrix(chip);
+                chip_matrices.emplace(chipId, tmp_matrix);
+            }
         }
+        std::cout << "Finished picking apart modules for Event " << nevent << " ; converted " << module_matrices.size() << " modules for TEPX to " << chip_matrices.size() << " chips" << std::endl;
 
-        // Write the stream for qcores of the **first module only**
-        stream_to_file(qcores.at(1),true);
+
+
+
+        //int nqcore = 0;
+        //for(auto pair : matrices){
+        //vector<QCore> tmp = enc.qcores(pair.second, nevent, pair.first);
+        //qcores[pair.first].insert(qcores[pair.first].end(), tmp.begin(), tmp.end());
+        //}
+
+        //// Write the stream for qcores of the **first module only**
+        //stream_to_file(qcores.at(1),true);
         nevent++;
-    }
+    }//end event loop
 }

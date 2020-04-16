@@ -1,4 +1,4 @@
-#include <IntMatrix.h>
+#include <util/IntMatrix.h>
 
 IntMatrix::IntMatrix(uint32_t nrow, uint32_t ncol)
 {
@@ -14,14 +14,29 @@ IntMatrix::IntMatrix(uint32_t nrow, uint32_t ncol)
     assert(this->data.size()==this->rows);
 }
 
+IntMatrix::IntMatrix()
+{
+    //this->rows = 0;
+    //this->cols = 0;
+    //std::vector<std::vector<ADC>> vec;
+    //this->data = vec;
+}
+
+IntMatrix::IntMatrix(const IntMatrix &matrix)
+{
+    rows = matrix.rows;
+    cols = matrix.cols;
+    data = matrix.data;
+}
+
 size_t IntMatrix::size_row()
 {
-    return this->rows();
+    return this->rows;
 }
 
 size_t IntMatrix::size_col()
 {
-    return this->cols();
+    return this->cols;
 }
 
 std::pair<size_t, size_t> IntMatrix::size()
@@ -33,50 +48,105 @@ void IntMatrix::clear()
 {
     for(auto row_vec : this->data)
     {
-        for(auto val : row:vec)
+        for(auto val : row_vec)
             val = 0;
     }
 }
 
 void IntMatrix::fill(uint32_t row, uint32_t col, uint32_t adc)
 {
-    assert(row < this->rows);
-    assert(col < this->cols);
-    this->data[row][col]=adc;
+    //assert(row < this->rows);
+    //assert(col < this->cols);
+    //if(row > this->rows)
+    //std::cout << "Warning, row " << row << " larger than matrix: " <<rows << std::endl;
+    //if(col > this->cols)
+    //std::cout << "Warning, col " << col << " larger than matrix: " <<cols << std::endl;
+    if(row < this->rows && col < this->cols)
+        this->data[row][col]=adc;
 }
 
+//for some weird reason the digis have larger row and col numbers than the actual chip
 void IntMatrix::convertPitch_andFill(uint32_t row, uint32_t col, uint32_t adc)
 {
-    if(row&1 == 0)//this is a simple check if row is an even number, alternative (row%2 == 0)
+    uint32_t arow=0;
+    uint32_t acol = 0;
+    if(row%2 == 0)//this is a simple check if row is an even number, alternative (row%2 == 0)
     {
-        row/=2;
-        col *=2;
-        col+=1;
+        arow=row/2;
+        acol =2*col+1;
     }
     else// odd row number
     {
-        row-=1;
-        row/=2;
-        col*=2;
+        arow=(row-1)/2;
+        acol=2*col;
     }
 
+    //assert(row < this->rows);
+    //assert(col < this->cols);
+    //if(arow > this->rows)
+    //std::cout << "Warning, row " << arow << " larger than matrix: " <<rows << std::endl;
+    //if(acol > this->cols)
+    //std::cout << "Warning, col " << acol << " larger than matrix: " <<cols << std::endl;
+    if(arow < this->rows && acol < this->cols)
+        this->data[arow][acol]=adc;
+}
+
+uint32_t IntMatrix::value(uint32_t row, uint32_t col)
+{
     assert(row < this->rows);
     assert(col < this->cols);
-    this->data[row][col]=adc;
+    return this->data.at(row).at(col);
 }
+
+void IntMatrix::calculate_size()
+{
+    this->rows = this->data.size();
+    this->cols = this->data.at(0).size();
+}
+
+
 IntMatrix IntMatrix::submatrix(uint32_t chip)
 {
-    IntMatrix aMatrix(336, 432);
+    size_t nrow = 336;
+    size_t ncol = 432;
 
+    IntMatrix aMatrix;
+    assert(chip < 4);
+    if(chip ==0)
+    {
+        auto first = this->data.begin();
+        auto last = this->data.begin()+nrow;
+        aMatrix.data=std::vector<std::vector<ADC>>(first, last);
+        for(auto& row_vec : aMatrix.data)
+            row_vec.resize(ncol);
+    }
+    if(chip ==1)
+    {
+        auto first = this->data.begin();
+        auto last = this->data.begin()+nrow;
+        aMatrix.data=std::vector<std::vector<ADC>>(first, last);
+        for(auto& row_vec : aMatrix.data)
+            row_vec.erase(row_vec.begin(), row_vec.begin()+ncol);
+    }
+    if(chip ==2)
+    {
+        auto first = this->data.begin()+nrow;
+        auto last = this->data.end();
+        aMatrix.data=std::vector<std::vector<ADC>>(first, last);
+        for(auto& row_vec : aMatrix.data)
+            row_vec.resize(ncol);
+    }
+    if(chip ==3)
+    {
+        auto first = this->data.begin()+nrow;
+        auto last = this->data.end();
+        aMatrix.data=std::vector<std::vector<ADC>>(first, last);
+        for(auto& row_vec : aMatrix.data)
+            row_vec.erase(row_vec.begin(), row_vec.begin()+ncol);
+    }
+    aMatrix.calculate_size();
+    //std::cout << "Chip matrix for chip: " << chip << " has size " <<  "Rows: " << aMatrix.size_row() << " Cols: " << aMatrix.size_col() << std::endl;
 
     return aMatrix;
 }
 
-IntMatrix IntMatrix::submatrix(uint32_t row, uint32_t nrow, uint32_t col, uint32_t ncol)
-{
-    IntMatrix aMatrix(nrow, ncol);
-
-
-    return aMatrix;
-        
-}

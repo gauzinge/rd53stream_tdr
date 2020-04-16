@@ -9,9 +9,9 @@ using namespace std;
 
 int Encoder::find_last_qrow(IntMatrix & matrix, uint32_t ccol){
     int last_row = -1;
-    for(uint32_t r=0; r<matrix.size(); r++) {
+    for(uint32_t r=0; r<matrix.size_row(); r++) {
         for(uint32_t c = ccol * this->col_factor; c<(ccol+1)*this->col_factor; c++){
-            if(matrix[r][c] > 0) {
+            if(matrix.data[r][c] > 0) {
                 last_row = r;
                 break;
             }
@@ -29,7 +29,7 @@ int Encoder::find_last_qrow(IntMatrix & matrix, uint32_t ccol){
 
 /**
  * Encode the 16-bit hitmap of using tree-based encoding
- * 
+ *
  * The output will be between 4 and 30 bits:
  * [Row OR (1-2 bits)][Row 1 (3-14 bits)][Row 2 (3-14 bits)]
  */
@@ -78,9 +78,9 @@ vector<bool> Encoder::encode_hitmap(vector<bool> hitmap) {
  */
 vector<QCore> Encoder::qcores(IntMatrix & matrix, int event, int module) {
     vector<QCore> qcores;
-    
+
     // Loop over core columns (ccol)
-    uint32_t nccol = floor(matrix.at(0).size() / this->col_factor);
+    uint32_t nccol = floor(matrix.size_col() / this->col_factor);
     for (uint32_t ccol = 0; ccol < nccol ; ccol++){
         int qcrow_prev = -2;
         int last_qcrow = find_last_qrow(matrix, ccol);
@@ -98,7 +98,7 @@ vector<QCore> Encoder::qcores(IntMatrix & matrix, int event, int module) {
             bool any_nonzero = false;
             for(uint32_t j = 0; j<this->row_factor; j++) {
                 for(uint32_t i = ccol * this->col_factor; i<(ccol+1)*this->col_factor; i++) {
-                    uint32_t value = matrix[qcrow*this->row_factor+j][i];
+                    uint32_t value = matrix.data[qcrow*this->row_factor+j][i];
                     any_nonzero |= value > 0;
                     qcore_adcs.push_back(value);
                 }
@@ -111,7 +111,7 @@ vector<QCore> Encoder::qcores(IntMatrix & matrix, int event, int module) {
             }
 
             // Meta information about the qcore
-            // necessary for stream building 
+            // necessary for stream building
             bool isneighbour = (qcrow_prev + 1 == qcrow);
             qcrow_prev = qcrow;
             bool islast = (qcrow == last_qcrow);
@@ -132,8 +132,8 @@ QCore::QCore(int event_in, int module_in, uint32_t ccol_in, uint32_t qcrow_in, b
     ccol(ccol_in),
     hitmap(adcs_to_hitmap(adcs)),
     encoded_hitmap(encoder_in->encode_hitmap(this->hitmap))
-    {
-    }
+{
+}
 vector<bool> QCore::binary_tots () const{
     vector<bool> tots;
     for(auto const & adc: adcs){
