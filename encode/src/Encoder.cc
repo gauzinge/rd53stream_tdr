@@ -7,22 +7,28 @@
 
 using namespace std;
 
-int Encoder::find_last_qrow(IntMatrix & matrix, uint32_t ccol){
+int Encoder::find_last_qrow (IntMatrix& matrix, uint32_t ccol)
+{
     int last_row = -1;
-    for(uint32_t r=0; r<matrix.size_row(); r++) {
-        for(uint32_t c = ccol * this->col_factor; c<(ccol+1)*this->col_factor; c++){
-            if(matrix.data[r][c] > 0) {
+
+    for (uint32_t r = 0; r < matrix.size_row(); r++)
+    {
+        for (uint32_t c = ccol * this->col_factor; c < (ccol + 1) *this->col_factor; c++)
+        {
+            if (matrix.data[r][c] > 0)
+            {
                 last_row = r;
                 break;
             }
         }
     }
 
-    if(last_row < 0){
+    if (last_row < 0)
         return last_row;
-    } else {
-        return last_row/this->row_factor;
-    }
+
+    else
+        //this is the row in units of quarter core size, so 2
+        return last_row / this->row_factor;
 };
 
 
@@ -33,25 +39,32 @@ int Encoder::find_last_qrow(IntMatrix & matrix, uint32_t ccol){
  * The output will be between 4 and 30 bits:
  * [Row OR (1-2 bits)][Row 1 (3-14 bits)][Row 2 (3-14 bits)]
  */
-vector<bool> Encoder::encode_hitmap(vector<bool> hitmap) {
-    assert(hitmap.size()==16);
+vector<bool> Encoder::encode_hitmap (vector<bool> hitmap)
+{
+    assert (hitmap.size() == 16);
 
     // Separate rows
     vector<bool> row1, row2;
-    row1.insert(row1.end(), hitmap.begin(), hitmap.begin()+8);
-    row2.insert(row2.end(), hitmap.begin()+8, hitmap.end());
-    assert(row1.size()==8 and row2.size()==8);
+    row1.insert (row1.end(), hitmap.begin(), hitmap.begin() + 8);
+    row2.insert (row2.end(), hitmap.begin() + 8, hitmap.end() );
+    assert (row1.size() == 8 and row2.size() == 8);
 
     // Row OR information
     std::vector<bool> row_or = {0, 0};
-    for( auto const bit : row1) {
-        if(bit) {
+
+    for ( auto const bit : row1)
+    {
+        if (bit)
+        {
             row_or[0] = 1;
             break;
         }
     }
-    for( auto const bit : row2) {
-        if(bit) {
+
+    for ( auto const bit : row2)
+    {
+        if (bit)
+        {
             row_or[1] = 1;
             break;
         }
@@ -59,16 +72,16 @@ vector<bool> Encoder::encode_hitmap(vector<bool> hitmap) {
 
     // Compress the components separately
     // using lookup tables
-    vector<bool> row_or_enc = enc2(row_or);
-    vector<bool> row1_enc = enc8(row1);
-    vector<bool> row2_enc = enc8(row2);
+    vector<bool> row_or_enc = enc2 (row_or);
+    vector<bool> row1_enc = enc8 (row1);
+    vector<bool> row2_enc = enc8 (row2);
 
     // Merge together
     vector<bool> encoded_hitmap;
-    encoded_hitmap.reserve(row_or_enc.size() + row1_enc.size() + row2_enc.size());
-    encoded_hitmap.insert(encoded_hitmap.end(), row_or_enc.begin(), row_or_enc.end());
-    encoded_hitmap.insert(encoded_hitmap.end(), row1_enc.begin(), row1_enc.end());
-    encoded_hitmap.insert(encoded_hitmap.end(), row2_enc.begin(), row2_enc.end());
+    encoded_hitmap.reserve (row_or_enc.size() + row1_enc.size() + row2_enc.size() );
+    encoded_hitmap.insert (encoded_hitmap.end(), row_or_enc.begin(), row_or_enc.end() );
+    encoded_hitmap.insert (encoded_hitmap.end(), row1_enc.begin(), row1_enc.end() );
+    encoded_hitmap.insert (encoded_hitmap.end(), row2_enc.begin(), row2_enc.end() );
 
     return encoded_hitmap;
 };
@@ -76,97 +89,138 @@ vector<bool> Encoder::encode_hitmap(vector<bool> hitmap) {
 /**
  * Build QCore objects from a pixel matrix
  */
-vector<QCore> Encoder::qcores(IntMatrix & matrix, int event, int module) {
+vector<QCore> Encoder::qcores (IntMatrix& matrix, int event, int module, int chip)
+{
     vector<QCore> qcores;
 
     // Loop over core columns (ccol)
-    uint32_t nccol = floor(matrix.size_col() / this->col_factor);
-    for (uint32_t ccol = 0; ccol < nccol ; ccol++){
+    uint32_t nccol = floor (matrix.size_col() / this->col_factor);
+
+    for (uint32_t ccol = 0; ccol < nccol ; ccol++)
+    {
         int qcrow_prev = -2;
-        int last_qcrow = find_last_qrow(matrix, ccol);
-        if(last_qcrow<0) {
+        int last_qcrow = find_last_qrow (matrix, ccol);
+
+        //if (last_qcrow > 0) std::cout << "DEBUG last qrow: " << last_qcrow << std::endl;
+
+        if (last_qcrow < 0)
             continue;
-        }
 
         // Loop over quarter core rows (qcrow)
-        for(uint32_t qcrow=0; qcrow<=last_qcrow; qcrow++ ){
+        for (uint32_t qcrow = 0; qcrow <= last_qcrow; qcrow++ )
+        {
             // The native representation of the QCore is
             // a 16-bit vector of ADC values, which are
             // simply copied from the matrix
             vector<ADC> qcore_adcs;
-            qcore_adcs.reserve(16);
+            qcore_adcs.reserve (16);
             bool any_nonzero = false;
-            for(uint32_t j = 0; j<this->row_factor; j++) {
-                for(uint32_t i = ccol * this->col_factor; i<(ccol+1)*this->col_factor; i++) {
-                    uint32_t value = matrix.data[qcrow*this->row_factor+j][i];
+
+            for (uint32_t j = 0; j < this->row_factor; j++)
+            {
+                for (uint32_t i = ccol * this->col_factor; i < (ccol + 1) *this->col_factor; i++)
+                {
+                    uint32_t value = matrix.data[qcrow * this->row_factor + j][i];
                     any_nonzero |= value > 0;
-                    qcore_adcs.push_back(value);
+                    qcore_adcs.push_back (value);
                 }
             }
-            assert(qcore_adcs.size() == 16);
+
+            assert (qcore_adcs.size() == 16);
 
             // Ignore qcores that do not have any hits
-            if(!any_nonzero) {
+            if (!any_nonzero)
                 continue;
-            }
 
             // Meta information about the qcore
             // necessary for stream building
             bool isneighbour = (qcrow_prev + 1 == qcrow);
             qcrow_prev = qcrow;
             bool islast = (qcrow == last_qcrow);
-            QCore qcore(event, module, ccol, qcrow, isneighbour, islast, qcore_adcs, this);
-            qcores.push_back(qcore);
+            //we increment the col by 1 as the valid address values for core_columns are 1 to 54
+            ccol += 1;
+
+            QCore qcore (event, module, chip, ccol, qcrow, isneighbour, islast, qcore_adcs, this);
+            qcores.push_back (qcore);
         }
     }
+
     return qcores;
 }
 
-QCore::QCore(int event_in, int module_in, uint32_t ccol_in, uint32_t qcrow_in, bool isneighbour_in, bool islast_in,vector<ADC> adcs_in, Encoder * encoder_in) :
-    event(event_in),
-    module(module_in),
-    adcs(adcs_in),
-    isneighbour(isneighbour_in),
-    islast(islast_in),
-    qcrow(qcrow_in),
-    ccol(ccol_in),
-    hitmap(adcs_to_hitmap(adcs)),
-    encoded_hitmap(encoder_in->encode_hitmap(this->hitmap))
+QCore::QCore (int event_in, int module_in, int chip_in, uint32_t ccol_in, uint32_t qcrow_in, bool isneighbour_in, bool islast_in, vector<ADC> adcs_in, Encoder* encoder_in) :
+    event (event_in),
+    module (module_in),
+    chip (chip_in),
+    adcs (adcs_in),
+    isneighbour (isneighbour_in),
+    islast (islast_in),
+    qcrow (qcrow_in),
+    ccol (ccol_in),
+    hitmap (adcs_to_hitmap (adcs) ),
+    encoded_hitmap (encoder_in->encode_hitmap (this->hitmap) )
 {
 }
-vector<bool> QCore::binary_tots () const{
+vector<bool> QCore::binary_tots () const
+{
     vector<bool> tots;
-    for(auto const & adc: adcs){
-        if(adc==0){
+
+    for (auto const& adc : adcs)
+    {
+        if (adc == 0)
             continue;
-        }
-        vector<bool> adc_binary = adc_to_binary(adc);
-        tots.insert(tots.end(), adc_binary.begin(), adc_binary.end());
+
+        for (size_t bit = 4; bit > 0; bit--)
+            tots.push_back ( (adc >> (bit - 1) ) & 0x1);
     }
+
+    assert (tots.size() <= 4 * adcs.size() );
     return tots;
 };
-vector<bool> QCore::adcs_to_hitmap(vector<ADC> adcs) {
-    assert(adcs.size()==16);
+
+vector<bool> QCore::adcs_to_hitmap (vector<ADC> adcs)
+{
+    assert (adcs.size() == 16);
 
     std::vector<bool> hitmap;
     // Set up uncompressed hitmap
-    hitmap.reserve(16);
-    for(auto const adc : adcs){
-        hitmap.push_back(adc>0);
-    }
-    assert(hitmap.size()==16);
+    hitmap.reserve (16);
+
+    for (auto const adc : adcs)
+        hitmap.push_back (adc > 0);
+
+    assert (hitmap.size() == 16);
 
     return hitmap;
 };
 
-vector<bool> QCore::row(int row_index) const {
-    if((row_index < 0) or (row_index > 1)){
+vector<bool> QCore::row (int row_index) const
+{
+    if ( (row_index < 0) or (row_index > 1) )
         throw;
-    }
+
     vector<bool> row;
-    row.insert(row.end(), this->hitmap.begin() + 8 * row_index, this->hitmap.begin() + 8 * (row_index+1));
-    assert(row.size() == 8);
+    row.insert (row.end(), this->hitmap.begin() + 8 * row_index, this->hitmap.begin() + 8 * (row_index + 1) );
+    assert (row.size() == 8);
     return row;
+}
+
+void QCore::print() const
+{
+    std::cout << " Module " << this->module << " Chip " << this->chip << "Quarter core: CoreCol: " << this->ccol << " QRow: " << this->qcrow << " Hitmap: " <<  std::endl;
+    size_t index = 0;
+
+    for (auto hit : this->hitmap)
+    {
+        std::cout << hit << " ";
+
+        if (index == 7) std::cout << std::endl;
+
+        index++;
+    }
+
+    std::cout << std::endl;
+
 }
 // vector<bool> Encoder::encode_matrix(IntMatrix & matrix) {
 //     // Number of quarter core columns
@@ -207,5 +261,3 @@ vector<bool> QCore::row(int row_index) const {
 
 //     return stream;
 // }
-
-
