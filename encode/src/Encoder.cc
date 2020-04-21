@@ -89,19 +89,19 @@ vector<bool> Encoder::encode_hitmap (vector<bool> hitmap)
 /**
  * Build QCore objects from a pixel matrix
  */
-vector<QCore> Encoder::qcores (IntMatrix& matrix, int event, int module, int chip)
+vector<QCore> Encoder::qcores (IntMatrix& matrix, int event, int module, int chip, std::ostream& stream)
 {
     vector<QCore> qcores;
 
     // Loop over core columns (ccol)
-    uint32_t nccol = floor (matrix.size_col() / this->col_factor);
+    uint32_t nccol = matrix.size_col() / this->col_factor;
+
+    //assert (nccol < 54);
 
     for (uint32_t ccol = 0; ccol < nccol ; ccol++)
     {
         int qcrow_prev = -2;
         int last_qcrow = find_last_qrow (matrix, ccol);
-
-        //if (last_qcrow > 0) std::cout << "DEBUG last qrow: " << last_qcrow << std::endl;
 
         if (last_qcrow < 0)
             continue;
@@ -120,6 +120,8 @@ vector<QCore> Encoder::qcores (IntMatrix& matrix, int event, int module, int chi
             {
                 for (uint32_t i = ccol * this->col_factor; i < (ccol + 1) *this->col_factor; i++)
                 {
+                    //stream <<   "  row: " << qcrow* this->row_factor + j << " Col " << i << std::endl;
+                    //assert (qcrow * this->row_factor + j < matrix.size_row());
                     uint32_t value = matrix.data[qcrow * this->row_factor + j][i];
                     any_nonzero |= value > 0;
                     qcore_adcs.push_back (value);
@@ -138,9 +140,7 @@ vector<QCore> Encoder::qcores (IntMatrix& matrix, int event, int module, int chi
             qcrow_prev = qcrow;
             bool islast = (qcrow == last_qcrow);
             //we increment the col by 1 as the valid address values for core_columns are 1 to 54
-            ccol += 1;
-
-            QCore qcore (event, module, chip, ccol, qcrow, isneighbour, islast, qcore_adcs, this);
+            QCore qcore (event, module, chip, ccol + 1, qcrow, isneighbour, islast, qcore_adcs, this);
             qcores.push_back (qcore);
         }
     }
@@ -205,21 +205,21 @@ vector<bool> QCore::row (int row_index) const
     return row;
 }
 
-void QCore::print() const
+void QCore::print (std::ostream& stream = std::cout) const
 {
-    std::cout << " Module " << this->module << " Chip " << this->chip << "Quarter core: CoreCol: " << this->ccol << " QRow: " << this->qcrow << " Hitmap: " <<  std::endl;
+    stream << " Module " << this->module << " Chip " << this->chip << " | Quarter core: CoreCol: " << this->ccol << " QRow: " << this->qcrow << " Hitmap: " <<  std::endl;
     size_t index = 0;
 
     for (auto hit : this->hitmap)
     {
-        std::cout << hit << " ";
+        stream << hit << " ";
 
-        if (index == 7) std::cout << std::endl;
+        if (index == 7) stream << std::endl;
 
         index++;
     }
 
-    std::cout << std::endl;
+    stream << std::endl;
 
 }
 // vector<bool> Encoder::encode_matrix(IntMatrix & matrix) {

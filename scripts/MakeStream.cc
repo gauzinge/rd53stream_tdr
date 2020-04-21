@@ -180,12 +180,18 @@ std::vector<bool> serializeChip (std::vector<QCore>& qcores, uint32_t event, uin
     to_binary_stream (ret_vec, event, 8);
 
     //now tackle the QCores
-    int nqcore = 0;
+    //int nqcore = 0;
+    if (print)
+    {
+        f << "Number of hit Qcores: " << qcores.size() << std::endl;
+        f << "Chip " << chip << "  Event " << event << std::endl;
+    }
+
 
     for (auto qcore : qcores)
     {
-        int n1 = 0;
-        int n2 = 0;
+        //int n1 = 0;
+        //int n2 = 0;
 
         if (new_ccol)
             to_binary_stream (ret_vec, qcore.ccol, 6 );
@@ -195,6 +201,19 @@ std::vector<bool> serializeChip (std::vector<QCore>& qcores, uint32_t event, uin
 
         if (!qcore.isneighbour)
             to_binary_stream (ret_vec, qcore.qcrow, 8 );
+
+        if (print)
+        {
+            qcore.print (f);
+            f << "islast " << qcore.islast << " isneighbor " << qcore.isneighbour <<  std::endl;
+            f << "Encoded hitmap: ";
+
+            for (auto bit : qcore.encoded_hitmap)
+                f << bit;
+
+            f << std::endl;
+
+        }
 
 
         to_binary_stream (ret_vec, qcore.encoded_hitmap);
@@ -219,6 +238,7 @@ std::vector<bool> serializeChip (std::vector<QCore>& qcores, uint32_t event, uin
 
     if (print)
     {
+        f << "Stream data: " << std::endl;
         size_t index = 0;
 
         for (auto bit : ret_vec)
@@ -230,7 +250,7 @@ std::vector<bool> serializeChip (std::vector<QCore>& qcores, uint32_t event, uin
                 f << std::endl;
         }
 
-        f << std::endl;
+        f << std::endl << std::endl;
     }
 
     return ret_vec;
@@ -347,21 +367,35 @@ int main (int argc, char* argv[])
         for (auto chip : chip_matrices )
         {
             //Print out chip coordinates
-            chip.first.print();
+            //chip.first.print();
             //pick apart each chip int matrix in QCores
             std::vector<QCore> qcores = enc.qcores (chip.second, nevent, chip.first.mmodule, chip.first.mchip);
 
             //create the actual stream for this chip
-            std::vector<bool> tmp =  serializeChip (qcores, nevent, chip.first.mchip, true, false);
+            std::stringstream ss;
+            std::vector<bool> tmp =  serializeChip (qcores, nevent, chip.first.mchip, true, true, ss);
 
-            if (tmp.size() / 64 > 25)
-                std::cout << "Stram size in 64-bit words for this chip: " << tmp.size() / 64 << std::endl;
+            //TODO:convert in vector<uint16_t> or vector<uint32_t>, insert header word at beginning of every vector and pad to end
 
-            //now pick apart in nbits - words, insert nbits separator between chips and serialize to ofstram and file
+            //chip.first.print();
+            //std::cout << "Stream size in 64-bit words for this chip: " << tmp.size() / 64 << std::endl;
+            //std::cout << ss.str() << std::endl;
         }
 
-        //// Write the stream for qcores of the **first module only**
-        //stream_to_file(qcores.at(1),true);
         nevent++;
     }//end event loop
+
+    std::vector<bool> a (8, 0);
+    //a[0] = 1;
+    //a[2] = 1;
+    a[5] = 1;
+    a[7] = 1;
+
+    for (auto bit : a)
+        std::cout << bit;
+
+    std::cout << std::endl;
+    uint8_t* b = reinterpret_cast<uint8_t*> (&a);
+    std::cout << std::hex << "0x" << + (*b) << std::dec << std::endl;
+
 }

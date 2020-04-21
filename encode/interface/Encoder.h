@@ -29,7 +29,7 @@ class QCore
 
     vector<bool> binary_tots () const;
     vector<bool> row (int row_index) const;
-    void print() const;
+    void print (std::ostream& stream) const;
 
   private:
     vector<bool> adcs_to_hitmap (vector<ADC> adcs);
@@ -50,7 +50,7 @@ class Encoder
     vector<bool> encode_matrix (IntMatrix& matrix);
     vector<bool> encode_qcore (vector<uint32_t> qcore);
     vector<bool> encode_hitmap (vector<bool> hitmap);
-    vector<QCore> qcores (IntMatrix&, int event, int module, int chip);
+    vector<QCore> qcores (IntMatrix&, int event, int module, int chip, std::ostream& stream = std::cout);
     int find_last_qrow (IntMatrix& matrix, uint32_t ccol);
 
   protected:
