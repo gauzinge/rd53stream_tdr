@@ -3,105 +3,48 @@
 #include <TTreeReader.h>
 #include <TTreeReaderArray.h>
 //#include <include/cxxopts.hpp>
-#include <encode/interface/Encoder.h>
 #include <util/Util.h>
 #include <util/IntMatrix.h>
 #include <util/ChipIdentifier.h>
 
 using namespace std;
 
+template<typename T>
+std::vector<T> toVec (std::vector<bool>& vec)
+{
+    //convert a vector<bool> that is anyway padded to 64bit boundaries to a vector<T> where the bits are encoded in the words for binary file storage
+    //in the vector the various data fields are MSB ... LSB so we keep that notation
+    //in the end, prepend the vector<T> with one word containing the number of words containing the data
 
-/**
- * Write a vector of bits to the stream output file.
- *
- * The stream is formatted into AURORA blocks of 64 bits length.
- * Each block is written into a new line of the output file.
- */
-//void write_bits (std::ofstream& f, std::vector<bool> bits, int& bits_written)
-//{
-//for (auto bit : bits)
-//{
-//if ( (bits_written % 64 == 0) )
-//{
-//// Start new stream
-//if (bits_written > 0)
-//{
-//f << endl;
-//f << "0";
-//}
-//else
-//f << "1";
+    //first check that input vec is padded to 64 bit boundaries
+    assert (vec.size() % 64 == 0);
 
-//bits_written++;
-//}
+    size_t sizeT = sizeof (T) * 8; //in bits
+    std::vector<T> ret_vec;
+    size_t ret_vec_size_calc = vec.size() / sizeT;
+    ret_vec.reserve (ret_vec_size_calc + 1);
+    //now insert the number of words to be read after reading this word
+    ret_vec.push_back (static_cast<T> (ret_vec_size_calc) );
 
-//f << bit ? "1" : "0";
-//bits_written++;
-//}
-//}
-/**
- * Convenience overload to write a single bit in the same manner.
- */
-//void write_bits (std::ofstream& f, bool bit, int& bits_written)
-//{
-//std::vector<bool> vec = {bit};
-//write_bits (f, vec, bits_written);
-//}
+    //now loop the word-sized chunks of vec
+    for (size_t word = 0; word < ret_vec_size_calc; word++)
+    {
+        //now loop the bits in word
+        T tmp_word = 0;
 
-//void stream_to_file (std::vector<QCore>& qcores, bool tot)
-//{
-//std::ofstream f;
-//f.open ("stream.txt");
-//bool new_ccol = true;
-//int bits_written = 0;
-//std::vector<bool> event = {1, 0, 1, 0, 1, 0, 0, 1};
-//write_bits (f, event, bits_written);
-//f << "|";
-//int nqcore = 0;
+        for (size_t bit_shift = 0; bit_shift < sizeT; bit_shift++)
+        {
+            //example: I want to shift bit 7 in the vector in the LSB of a uint8_t ->bit_shift =0
+            //and shift bit 6 in LSB+1 etc ->bit_shift=1
+            size_t bit = word * sizeT + (sizeT - 1) - bit_shift;
+            tmp_word |= (vec[bit] << bit_shift);
+        }
 
-//for (auto q : qcores)
-//{
-//int n1 = 0;
-//int n2 = 0;
+        ret_vec.push_back (tmp_word);
+    }
 
-//if (new_ccol)
-//{
-//std::vector<bool> ccol_address = int_to_binary (53, 6);
-//write_bits (f, ccol_address, bits_written);
-//// assert(ccol_address.size()==6);
-//}
-
-//f << ":";
-//write_bits (f, q.islast, bits_written);
-//write_bits (f, q.isneighbour, bits_written);
-//f << ":";
-
-//if (not q.isneighbour)
-//{
-//std::vector<bool> qrow_address = int_to_binary (q.qcrow, 8);
-//write_bits (f, qrow_address, bits_written);
-//}
-
-//f << ":";
-//write_bits (f, q.encoded_hitmap, bits_written);
-
-//if (tot)
-//{
-//f << ":";
-//write_bits (f, q.binary_tots(), bits_written);
-//}
-
-//f << "|";
-//new_ccol = q.islast;
-//}
-
-//// Fill up frame with orphan bits
-//while (bits_written % 64 != 0 )
-//write_bits (f, false, bits_written);
-
-//f << endl;
-//f.close();
-//}
+    return ret_vec;
+}
 
 void to_binary_stream (std::vector<bool>& vec, uint32_t value, size_t nbits)
 {
@@ -376,6 +319,8 @@ int main (int argc, char* argv[])
             std::vector<bool> tmp =  serializeChip (qcores, nevent, chip.first.mchip, true, true, ss);
 
             //TODO:convert in vector<uint16_t> or vector<uint32_t>, insert header word at beginning of every vector and pad to end
+            std::vector<uint16_t> binary_vec = toVec<uint16_t> (tmp);
+            std::cout << "Size in 64 bit words: " <<  tmp.size() / 64 << " in 16 bit words " << tmp.size() / 16 << " of the resulting binary vec (remember: +1 for the number of data words!) " << binary_vec.size() << std::endl;
 
             //chip.first.print();
             //std::cout << "Stream size in 64-bit words for this chip: " << tmp.size() / 64 << std::endl;
@@ -384,18 +329,4 @@ int main (int argc, char* argv[])
 
         nevent++;
     }//end event loop
-
-    std::vector<bool> a (8, 0);
-    //a[0] = 1;
-    //a[2] = 1;
-    a[5] = 1;
-    a[7] = 1;
-
-    for (auto bit : a)
-        std::cout << bit;
-
-    std::cout << std::endl;
-    uint8_t* b = reinterpret_cast<uint8_t*> (&a);
-    std::cout << std::hex << "0x" << + (*b) << std::dec << std::endl;
-
 }
