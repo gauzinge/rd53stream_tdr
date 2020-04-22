@@ -41,10 +41,6 @@ int main (int argc, char* argv[])
 
     uint32_t nevent = 0;
 
-    Serializer ser; //an instance of my Serialzier class that does not need to be a class but it is convenient
-
-
-
     // Event loop
     while (reader.Next() )
     {
@@ -131,9 +127,9 @@ int main (int argc, char* argv[])
 
             //create the actual stream for this chip
             std::stringstream ss;
-            std::vector<bool> tmp =  ser.serializeChip (qcores, nevent, chip.first.mchip, true, true, ss);
+            std::vector<bool> tmp =  Serializer::serializeChip (qcores, nevent, chip.first.mchip, true, true, ss);
 
-            std::vector<uint16_t> binary_vec = ser.toVec<uint16_t> (tmp);
+            std::vector<uint16_t> binary_vec = Serializer::toVec<uint16_t> (tmp);
             std::cout << "Size in 64 bit words: " <<  tmp.size() / 64 << " in 16 bit words " << tmp.size() / 16 << " of the resulting binary vec (remember: +1 for the number of data words!) " << binary_vec.size() << std::endl;
 
             //chip.first.print();
