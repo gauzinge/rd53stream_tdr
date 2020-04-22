@@ -41,6 +41,16 @@ int main (int argc, char* argv[])
 
     uint32_t nevent = 0;
 
+    std::map<uint32_t, std::ofstream*> outfile_map;
+
+    for (uint32_t dtc = 1; dtc <= 5; dtc++)
+    {
+        std::stringstream ss;
+        ss << "dtc_" << dtc << "_data.dat";
+        std::ofstream stream (ss.str(), std::ios::out | std::ios::binary);
+        outfile_map[dtc] = &stream;
+    }
+
     // Event loop
     while (reader.Next() )
     {
@@ -87,6 +97,8 @@ int main (int argc, char* argv[])
                 module_matrices.emplace (tmp_id, tmp_matrix);
             }
 
+            //have a map of map<DTC, vector<T>> where vector is the list of encoded modules
+
             //in all other cases the Intmatrix for that module exists already
             //get the row, col and ADC (attention, sensor row and column address) for the current module
             uint32_t row = trv_row.At (ientry);
@@ -101,6 +113,28 @@ int main (int argc, char* argv[])
         // Loop over modules and create qcores for each module
         std::cout << "Finished reading full data for Event " << nevent << " from the tree; found " << module_matrices.size() << " modules for TEPX" << std::endl;
 
+        //for each DTC, encode the module coordinates in a vector<uint16_t>, determine the size of that vector and create a file header for each DTC;
+        //do all of the below only for the first event
+        if (nevent == 0)
+        {
+            std::map<uint32_t, std::vector<uint16_t>> dtc_map;
+
+            for (auto module : module_matrices)
+                dtc_map[module.first.mdtc].push_back (module.first.encode<uint16_t>() );
+
+            for (auto& dtc : dtc_map)
+            {
+                std::cout << "DTC " << dtc.first << " has " << dtc.second.size() << " Modules connected" << std::endl;
+                uint16_t header_version = 1;
+                dtc.second.insert (dtc.second.begin(), dtc.second.size() );
+                dtc.second.insert (dtc.second.begin(), header_version );
+                std::cout << "Now the size is " << dtc.second.size() << " and the first element is " << dtc.second.at (0) << " and the header size is " << dtc.second.at (1) << std::endl;
+                //now to file
+                Serializer::to_file<uint16_t> (outfile_map[dtc.first], dtc.second);
+            }
+        }
+
+
         //now split the tmp_matrix in 4 chip matrices, construct the Chip identifier object and insert into the matrices map
         for (auto matrix : module_matrices)
         {
@@ -114,10 +148,6 @@ int main (int argc, char* argv[])
 
         std::cout << "Finished picking apart modules for Event " << nevent << " ; converted " << module_matrices.size() << " modules for TEPX to " << chip_matrices.size() << " chips" << std::endl;
 
-
-
-
-        //int nqcore = 0;
         for (auto chip : chip_matrices )
         {
             //Print out chip coordinates
@@ -130,7 +160,9 @@ int main (int argc, char* argv[])
             std::vector<bool> tmp =  Serializer::serializeChip (qcores, nevent, chip.first.mchip, true, true, ss);
 
             std::vector<uint16_t> binary_vec = Serializer::toVec<uint16_t> (tmp);
-            std::cout << "Size in 64 bit words: " <<  tmp.size() / 64 << " in 16 bit words " << tmp.size() / 16 << " of the resulting binary vec (remember: +1 for the number of data words!) " << binary_vec.size() << std::endl;
+            Serializer::to_file<uint16_t> (outfile_map[chip.first.mdtc], binary_vec);
+
+            //std::cout << "Size in 64 bit words: " <<  tmp.size() / 64 << " in 16 bit words " << tmp.size() / 16 << " of the resulting binary vec (remember: +1 for the number of data words!) " << binary_vec.size() << std::endl;
 
             //chip.first.print();
             //std::cout << "Stream size in 64-bit words for this chip: " << tmp.size() / 64 << std::endl;
@@ -139,4 +171,7 @@ int main (int argc, char* argv[])
 
         nevent++;
     }//end event loop
+
+    for (auto& file : outfile_map)
+        file.second->close();
 }

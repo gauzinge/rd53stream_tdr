@@ -44,10 +44,12 @@ namespace Serializer {
         return ret_vec;
     }
 
+    //returns the number of bytes written
     template<typename T>
-    size_t to_file (std::ofstream& fstream, std::vector<T>)
+    size_t to_file (std::ofstream* fstream, std::vector<T> vec)
     {
-
+        fstream->write ( (char*) vec.data(), vec.size() *sizeof (T) );
+        return vec.size() * sizeof (T);
     }
 
 

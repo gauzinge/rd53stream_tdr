@@ -87,7 +87,7 @@ class ChipIdentifier
 
     //encode the disk, ring, module, # of chips in a word of type T
     template<typename T>
-    encode()
+    T encode() const
     {
         assert (sizeof (T) * 8 >= 16); //?
         uint16_t word = 0;
@@ -102,14 +102,13 @@ class ChipIdentifier
         word |= (mdisk & 0xF) << 12;
         //16b total
 
-        return = static_cast<T> (word);
+        return static_cast<T> (word);
         //else
         //{
 
         //}
 
     }
-
 
     //protected:
     uint32_t mdisk;
