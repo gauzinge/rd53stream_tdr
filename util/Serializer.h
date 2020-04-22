@@ -44,6 +44,12 @@ namespace Serializer {
         return ret_vec;
     }
 
+    template<typename T>
+    size_t to_file (std::ofstream& fstream, std::vector<T>)
+    {
+
+    }
+
 
     //private:
     void to_binary_stream (std::vector<bool>& vec, uint32_t value, size_t nbits)
