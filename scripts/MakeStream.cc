@@ -39,7 +39,7 @@ int main (int argc, char* argv[])
 
     uint32_t nrows_module = 672;
     uint32_t ncols_module = 864;
-    int nevents = 10;
+    int nevents = 400;
 
     uint32_t nevent = 0;
 
