@@ -5,7 +5,7 @@
 #include <vector>
 using namespace std;
 
-void DecoderBase::decode()
+void DecoderBase::decode (bool do_tot)
 {
 
 }
@@ -22,16 +22,19 @@ void DecoderBase::move_ahead (int nbits)
     {
         position += nbits;
         bitsread += nbits;
+        pos += nbits;
     }
     else
     {
         position += nbits + 1;
         bitsread += nbits + 1;
+        pos += nbits + 1;
     }
 
-    if (position == buffer.end() )
-        throw "Reached end.";
+    //if (position == buffer.end() )
+    //throw "Reached end.";
 }
+
 void DecoderBase::shift_buffer (int nbits)
 {
     int bufsize = this->buffer.size();
@@ -78,8 +81,6 @@ void DecoderBase::print_header (std::ostream& stream)
 
     if (this->headervec.size() )
     {
-        std::cout << "I happen" << std::endl;
-
         for (auto& word : this->headervec)
         {
             uint32_t disk = 0;
@@ -99,6 +100,7 @@ void DecoderBase::print_header (std::ostream& stream)
 
 void DecoderBase::print_buffer (std::ostream& stream)
 {
+    stream << "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&" << std::endl;
     stream << "Stream data: " << std::endl;
     size_t index = 0;
 
@@ -111,5 +113,5 @@ void DecoderBase::print_buffer (std::ostream& stream)
             stream << std::endl;
     }
 
-    stream << std::endl << std::endl;
+    stream  << std::endl;
 }

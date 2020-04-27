@@ -27,11 +27,19 @@ int main (int argc, char* argv[])
     //decoder.load_file(opts["file"].as<string>());
     decoder.read_binaryheader<uint16_t> (filename );
 
-    for (size_t nchips = 0; nchips < decoder.getNchips(); nchips++)
+    //for one entire envent
+    //there are 400 events in the standard files
+    for (size_t nevent = 0; nevent < 10; nevent++)
     {
-        decoder.read_chip<uint16_t>();
-        decoder.print_buffer();
+        std::cout << "EVENT " << nevent << std::endl;
 
-        //decoder.decode();
+        for (size_t nchips = 0; nchips < decoder.getNchips(); nchips++)
+        {
+            decoder.read_chip<uint16_t>();
+            decoder.print_buffer();
+            decoder.decode (true);
+
+            //if (nchips == 0) break;
+        }
     }
 }

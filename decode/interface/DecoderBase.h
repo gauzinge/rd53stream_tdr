@@ -11,13 +11,18 @@ using namespace std;
 #ifndef DECODERBASE_H
 #define DECODERBASE_H
 
+#define TAGBITS 8
+#define CCOLBITS 6
+#define QCROWBITS 8
+#define TOTBITS 4
+
 class DecoderBase
 {
   public:
     DecoderBase() : bitsread (0) {};
     virtual ~DecoderBase() {};
     void load_file (string path_to_file);
-    virtual void decode();
+    virtual void decode (bool do_tot);
     void shift_buffer (int nbits);
     vector<bool> buffer;
     enum State
@@ -37,10 +42,12 @@ class DecoderBase
     };
     void move_ahead (int nbits);
     virtual std::pair<int, int> decode_row();
+
     void print_buffer (std::ostream& stream = std::cout);
 
   protected:
     vector<bool>::iterator position;
+    size_t pos;
     int clk;
     int state;
     int bitsread;
@@ -102,6 +109,7 @@ class DecoderBase
             this->file.seekg (this->filepos);
             T nwords;
             this->file.read ( (char*) &nwords, sizeof (T) );
+            stream << "###############################################################" << std::endl;
             stream << "This chip has " << nwords << " words of " << sizeof (T) * 8 << " bits which corresponds to " << nwords * 8 * sizeof (T) / 64 << " 64 bit words" << std::endl;
 
             std::vector<T> buf (nwords);

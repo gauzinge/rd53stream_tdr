@@ -8,170 +8,300 @@
 using namespace std;
 
 
-std::pair<int, int> SimpleStreamDecoder::decode_row(){
+std::pair<int, int> SimpleStreamDecoder::decode_row()
+{
     vector<bool> row;
-    row.reserve(14);
-    row.insert(row.end(), position, position+14);
+    row.reserve (14);
+    row.insert (row.end(), position, position + 14);
 
-    for(auto bit : row) {
-        cout << int(bit);
-    }
-    cout <<endl;
-    return hits_in_row(row);
+    //std::cout << "ROW: ";
+
+    //for (auto bit : row)
+    //cout << int (bit);
+
+    //cout << endl;
+
+    return hits_in_row (row);
 }
 
-void SimpleStreamDecoder::decode(){
+void SimpleStreamDecoder::decode (bool do_tot)
+{
+    uint16_t chip = 0;
+    uint16_t tag = 0;
+    uint16_t ccol = 0;
+    uint16_t qcrow = 0;
     // using namespace SimpleStreamDecoder;
     state = START;
     position = buffer.begin();
+    pos = 0;
     bool islast;
+    bool isneighbor;
     int hit_count = 0;
     int iterations = 0;
     int nrows = -1;
-    bool row1_hit=false;
-    bool row2_hit=false;
-    bool do_tot = false;
-    int n1=0;
-    int n2=0;
-    int nqcore=0;
-    while(true) {
+    bool row1_hit = false;
+    bool row2_hit = false;
+    //bool do_tot = false;
+    int n1 = 0;
+    int n2 = 0;
+    int nqcore = 0;
+
+    std::cout << "***************************CHIP***************************" << std::endl;
+
+    while (true)
+    {
         iterations++;
-        if(state == END){
+
+        if (state == END)
             break;
-        }
+
         // cout << state << " " << bitsread << endl;
-        switch(state){
-            case START: {
-                if(not *position) {
+        switch (state)
+        {
+            case START:
+            {
+                if (not * position)
                     throw "Did not find NS=1 at start!";
-                }
-                move_ahead(1);
+
+                move_ahead (1);
+                state = CHIP;
+                continue;
+            }
+
+            case CHIP:
+            {
+                chip = *position << 1 | * (position + 1);
+                //std::cout << "Chip ID " << chip << std::endl;
+                move_ahead (2);
                 state = TAG;
                 continue;
             }
-            case TAGORCCOL: {
-                if( *position and *(position+1) and *(position+2) ){
-                    move_ahead(3);
+
+            case TAGORCCOL:
+            {
+                if ( *position and * (position + 1) and * (position + 2) )
+                {
+                    move_ahead (3);
                     state = TAG;
-                } else {
-                    bool orphan = true;
-                    for(int i = 0; i<6; i++){
-                        // cout << "orphan " << i << " " << *(position+i) << endl;
-                        orphan &= not *(position + i);
-                    }
-                    // cout << "ORPHAN " << orphan <<endl;
-                    if(orphan) {
-                        state = END;
-                    } else {
-                        state = CCOL;
-                    }
                 }
+                else
+                {
+                    bool orphan = true;
+
+                    for (int i = 0; i < 6; i++)
+                    {
+                        //cout << "orphan " << i << " " << * (position + i) << endl;
+                        orphan &= not * (position + i);
+                    }
+
+                    if (orphan) cout << "Orphan bits detected! - end of Event for this chip " << endl << endl;
+
+                    if (orphan)
+                        state = END;
+
+                    else
+                        state = CCOL;
+                }
+
                 continue;
             }
-            case TAG:{
-                move_ahead(8);
+
+            case TAG:
+            {
+                for (int bit = 0; bit < TAGBITS; bit++)
+                    tag |= (* (position + bit) ) << (TAGBITS - 1 - bit);
+
+                std::cout << "Chip Id: " << chip << " Tag: " << tag << std::endl;
+                move_ahead (TAGBITS);
+
                 state = TAGORCCOL;
                 continue;
             }
-            case CCOL: {
-                move_ahead(6);
+
+            case CCOL:
+            {
+                ccol = 0;
+
+                for (int bit = 0; bit < CCOLBITS; bit++)
+                    ccol |= (* (position + bit) ) << (CCOLBITS - 1 - bit);
+
+                std::cout << "***************" << std::endl;
+                std::cout << "** CCol: " << ccol << " **" << std::endl;
+                std::cout << "***************" << std::endl;
+                move_ahead (CCOLBITS);
                 state = ISLAST;
                 continue;
             }
-            case ISLAST: {
+
+            case ISLAST:
+            {
                 islast = *position;
-                move_ahead(1);
+                move_ahead (1);
                 state = ISNEIGHBOR;
                 continue;
             }
-            case ISNEIGHBOR: {
-                if(*position) {
+
+            case ISNEIGHBOR:
+            {
+                isneighbor = *position;
+
+
+                if (isneighbor)
+                {
                     state = ROWOR;
-                } else {
-                    state = QROW;
+                    qcrow += 2;
+                    std::cout <<  "QCrow: " << qcrow << " | IsLast: " << islast << " | IsNeighbor: " << isneighbor << std::endl;
+                    std::cout << "***************" << std::endl;
+                    //std::cout << "IsLast: " << islast << " IsNeighbor: " << isneighbor << std::endl;
                 }
-                move_ahead(1);
+
+                else
+                    state = QROW;
+
+                move_ahead (1);
                 continue;
             }
-            case QROW: {
+
+            case QROW:
+            {
+
+                //uint16_t qcrow = 0;
+                qcrow = 0;
+
+                for (int bit = 0; bit < QCROWBITS; bit++)
+                    qcrow |= (* (position + bit) ) << (QCROWBITS - 1 - bit);
+
+
+                std::cout << "QCrow: " << qcrow << " | IsLast: " << islast << " | IsNeighbor: " << isneighbor << std::endl;
+                std::cout << "***************" << std::endl;
+                move_ahead (QCROWBITS);
                 state = ROWOR;
-                move_ahead(8);
                 continue;
             }
-            case ROWOR: {
-                if(not *position) {
+
+            case ROWOR:
+            {
+                if (not * position)
+                {
                     nrows = 1;
                     row1_hit = false;
                     row2_hit = true;
-                    move_ahead(1);
-                } else if (*position and *(position+1)){
+                    move_ahead (1);
+                }
+                else if (*position and * (position + 1) )
+                {
                     nrows = 2;
-                    move_ahead(2);
+                    move_ahead (2);
                     row1_hit = true;
                     row2_hit = true;
-                } else {
+                }
+                else
+                {
                     nrows = 1;
-                    move_ahead(2);
+                    move_ahead (2);
                     row1_hit = true;
                     row2_hit = false;
                 }
-                state=ROW;
+
+
+
+                state = ROW;
                 continue;
             }
-            case ROW: {
-                if(nrows == 0) {
+
+            case ROW:
+            {
+                if (nrows == 0)
                     throw "Reached state ROW with ill-defined number of rows.";
-                }
+
                 pair<int, int> size_and_count = decode_row();
                 int row_size = size_and_count.first;
                 hit_count += size_and_count.second;
-                if( row1_hit and row2_hit) {
-                    if(nrows==2) {
-                        n1+=size_and_count.second;
-                    } else {
-                        n2+=size_and_count.second;
-                    }
-                } else if (row1_hit) {
-                    n1+=size_and_count.second;
-                } else if (row2_hit) {
-                    n2+=size_and_count.second;
+
+                if ( row1_hit and row2_hit)
+                {
+                    if (nrows == 2)
+                        n1 += size_and_count.second;
+
+                    else
+                        n2 += size_and_count.second;
                 }
-                move_ahead(row_size);
+                else if (row1_hit)
+                    n1 += size_and_count.second;
+
+                else if (row2_hit)
+                    n2 += size_and_count.second;
+
+                move_ahead (row_size);
                 nrows--;
-                if(nrows > 0){
+
+                if (nrows > 0)
                     state = ROW;
-                } else {
+
+                else
                     state = TOT;
-                }
+
                 continue;
             }
-            case TOT:{
-                cout <<  nqcore++ << " " << "QCORE "<< n1 << " " << n2 << " " <<n1+n2<<endl;
+
+            case TOT:
+            {
+                //cout <<  nqcore++ << " " << "QCORE " << n1 << " " << n2 << " " << n1 + n2 << endl;
+                std::cout << "Row1 hits: " << n1 <<  std::endl << "Row2 hits: " <<  n2 << std::endl << "-------------" << std::endl << "Total hits: " << hit_count <<  std::endl << "TOT list:" << std::endl;
+                //std::cout << "Hit count: " << hit_count << " n1: " << n1 << " n2: " << n2 << " n1+ n2: " << n1 + n2 << std::endl;
+
                 n1 = 0;
-                n2=0;
-                if(do_tot){
-                    if(hit_count < 0){
+                n2 = 0;
+
+                if (do_tot)
+                {
+                    if (hit_count < 0)
+                    {
                         cout << "Reached state TOT with ill-defined hit count " << hit_count << "!" << endl;
                         throw "Reached state TOT with ill-defined hit count";
                     }
-                    move_ahead(4*hit_count);
+
+                    size_t count = 1;
+
+                    while (hit_count > 0)
+                    {
+                        uint16_t tot = 0;
+
+                        for (int bit = 0; bit < TOTBITS; bit++)
+                            tot |= (* (position + bit) ) << (TOTBITS - 1 - bit);
+
+                        std::cout << "Hit " << count << ": " << tot << std::endl;
+
+                        move_ahead (TOTBITS);
+                        hit_count--;
+                        count++;
+                    }
                 }
+
                 hit_count = 0;
-                if(islast) {
+
+                if (islast)
                     state = TAGORCCOL;
-                } else {
+
+                else
+                {
+                    std::cout << "***************" << std::endl;
                     state = ISLAST;
                 }
+
                 continue;
             }
-            case END:{
+
+            case END:
+            {
                 break;
             }
         }
     }
 
 }
-enum Align {
-    ccol=0,
+enum Align
+{
+    ccol = 0,
     hitmap,
 };
