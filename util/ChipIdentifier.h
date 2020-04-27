@@ -89,7 +89,7 @@ class ChipIdentifier
     template<typename T>
     T encode() const
     {
-        assert (sizeof (T) * 8 >= 16); //?
+        //assert (sizeof (T) * 8 >= 16); //?
         uint16_t word = 0;
 
         //# of chips (2:0) 3b
