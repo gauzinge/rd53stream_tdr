@@ -54,7 +54,7 @@ namespace Serializer {
 
 
     //private:
-    void to_binary_stream (std::vector<bool>& vec, uint32_t value, size_t nbits)
+    void to_binary_stream (std::vector<bool>& vec, uint32_t value, size_t nbits, uint32_t chip)
     {
         assert (nbits > 0);
 
@@ -71,6 +71,8 @@ namespace Serializer {
                 //std::cout << "CASE 1 - I am at a word boundary -  word # " << vec.size() / 64 << std::endl;
                 //in this condition, we have 64 bits full but we are not the first bit in the stream
                 vec.push_back (0);
+                vec.push_back ( (chip >> 1) & 1);
+                vec.push_back (chip & 1);
             }
 
             vec.push_back (bit);
@@ -80,7 +82,7 @@ namespace Serializer {
         }
     }
     //useful overload for the binary vectors of the QCore object
-    void to_binary_stream (std::vector<bool>& vec, std::vector<bool> to_write)
+    void to_binary_stream (std::vector<bool>& vec, std::vector<bool> to_write, uint32_t chip)
     {
         assert (to_write.size() > 0);
 
@@ -93,6 +95,8 @@ namespace Serializer {
             {
                 //std::cout << "Size " << vec.size() << " word " << vec.size() / 64 << " index " << vec.size() % 64 << " left " << 64 - (vec.size() % 64) << " to write " << to_write.size() << " " << 64 - (vec.size() % 64) - to_write.size() <<  std::endl;
                 vec.push_back (0);
+                vec.push_back ( (chip >> 1) & 1);
+                vec.push_back (chip & 1);
             }
 
             vec.insert (vec.end(), to_write.begin(), to_write.end() );
@@ -107,6 +111,8 @@ namespace Serializer {
                     //std::cout << "I am at a word boundary -  word # " << vec.size() / 64 << std::endl;
                     //in this condition, we have 64 bits full but we are not the first bit in the stream
                     vec.push_back (0);
+                    vec.push_back ( (chip >> 1) & 1);
+                    vec.push_back (chip & 1);
                 }
 
                 //Iknow, not the most efficient but safe and takes care of new stream bit

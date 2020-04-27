@@ -29,9 +29,9 @@ int main (int argc, char* argv[])
 
     //for one entire envent
     //there are 400 events in the standard files
-    for (size_t nevent = 0; nevent < 10; nevent++)
+    //for (size_t nevent = 0; nevent < 10; nevent++)
     {
-        std::cout << "EVENT " << nevent << std::endl;
+        //std::cout << "EVENT " << nevent << std::endl;
 
         for (size_t nchips = 0; nchips < decoder.getNchips(); nchips++)
         {

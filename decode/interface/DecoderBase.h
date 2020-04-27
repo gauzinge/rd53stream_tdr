@@ -65,7 +65,7 @@ class DecoderBase
   public:
     size_t getNchips()
     {
-        return headersize;
+        return headervec.size() * 4;
     }
 
     //method to read binary file
@@ -122,12 +122,15 @@ class DecoderBase
             if (buf.size() )
             {
                 this->buffer.clear();
+                this->bitsread = 0;
 
                 //now iterate the bits in the buf vector and push back into the chip buffer
                 int counter = 0;
 
                 for (auto& word : buf)
                 {
+                    //if (word == 0) std::cout << counter << " is 0" << std::endl;
+
                     for (int shift = wordsize_bit - 1 ; shift >= 0 ; shift--)
                     {
                         bool bit = (word >> shift) & 1;

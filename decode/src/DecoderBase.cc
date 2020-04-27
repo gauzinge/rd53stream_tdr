@@ -3,6 +3,8 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <assert.h>
+
 using namespace std;
 
 void DecoderBase::decode (bool do_tot)
@@ -16,20 +18,20 @@ std::pair<int, int> DecoderBase::decode_row()
 
 void DecoderBase::move_ahead (int nbits)
 {
-    int target = bitsread % 64 + nbits;
+    //int target = bitsread % 64 + nbits;
 
-    if (target <= 64)
-    {
-        position += nbits;
-        bitsread += nbits;
-        pos += nbits;
-    }
-    else
-    {
-        position += nbits + 1;
-        bitsread += nbits + 1;
-        pos += nbits + 1;
-    }
+    //if (target <= 64)
+    //{
+    position += nbits;
+    bitsread += nbits;
+    pos += nbits;
+    //}
+    //else
+    //{
+    //position += nbits + 1;
+    //bitsread += nbits + 1;
+    //pos += nbits + 1;
+    //}
 
     //if (position == buffer.end() )
     //throw "Reached end.";

@@ -46,16 +46,34 @@ void SimpleStreamDecoder::decode (bool do_tot)
     int n2 = 0;
     int nqcore = 0;
 
+    //before decoding, I should remove all the NS=0 bits from the vector
+    size_t buffsize = this->buffer.size() / 64;
+
+    for (size_t nword = buffsize - 1; nword > 0; nword--)
+    {
+        size_t bit = nword * 64;
+        std::cout << "Removing NS bit " << bit << " from word " << nword + 1 << " with value " << this->buffer.at (bit) << std::endl;
+
+        if (!this->buffer.at (bit) )
+            this->buffer.erase (this->buffer.begin() + bit, this->buffer.begin() + bit + 2);
+        else std::cout << "ERROR, NS bit 0 expected but 1 detected" << std::endl;
+    }
+
+    this->print_buffer();
+
     std::cout << "***************************CHIP***************************" << std::endl;
+
 
     while (true)
     {
+        //cout << state << " " << bitsread << " pos " << pos << " bit " << *position << endl;
         iterations++;
 
         if (state == END)
             break;
 
-        // cout << state << " " << bitsread << endl;
+
+
         switch (state)
         {
             case START:
@@ -92,12 +110,17 @@ void SimpleStreamDecoder::decode (bool do_tot)
                     {
                         //cout << "orphan " << i << " " << * (position + i) << endl;
                         orphan &= not * (position + i);
+                        //move_ahead (6);
                     }
 
-                    if (orphan) cout << "Orphan bits detected! - end of Event for this chip " << endl << endl;
 
                     if (orphan)
+                    {
+
+                        cout << "Orphan bits detected! - end of Event for this chip " << endl << endl;
                         state = END;
+                        //this->buffer.erase (position, this->buffer.end() );
+                    }
 
                     else
                         state = CCOL;
@@ -108,6 +131,7 @@ void SimpleStreamDecoder::decode (bool do_tot)
 
             case TAG:
             {
+
                 for (int bit = 0; bit < TAGBITS; bit++)
                     tag |= (* (position + bit) ) << (TAGBITS - 1 - bit);
 
@@ -136,6 +160,8 @@ void SimpleStreamDecoder::decode (bool do_tot)
             case ISLAST:
             {
                 islast = *position;
+
+
                 move_ahead (1);
                 state = ISNEIGHBOR;
                 continue;
@@ -186,11 +212,13 @@ void SimpleStreamDecoder::decode (bool do_tot)
                     nrows = 1;
                     row1_hit = false;
                     row2_hit = true;
+
                     move_ahead (1);
                 }
                 else if (*position and * (position + 1) )
                 {
                     nrows = 2;
+
                     move_ahead (2);
                     row1_hit = true;
                     row2_hit = true;
@@ -198,6 +226,7 @@ void SimpleStreamDecoder::decode (bool do_tot)
                 else
                 {
                     nrows = 1;
+
                     move_ahead (2);
                     row1_hit = true;
                     row2_hit = false;
