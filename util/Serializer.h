@@ -131,9 +131,9 @@ namespace Serializer {
         //start a new stream so new stream bit is 1
         ret_vec.push_back (1);
         //we assume multi chip mode, so encode 2 bit chip id
-        to_binary_stream (ret_vec, chip, 2);
+        to_binary_stream (ret_vec, chip, 2, chip);
         //8 bits tag, we use event number for this
-        to_binary_stream (ret_vec, event, 8);
+        to_binary_stream (ret_vec, event, 8, chip);
 
         //now tackle the QCores
         //int nqcore = 0;
@@ -150,13 +150,13 @@ namespace Serializer {
             //int n2 = 0;
 
             if (new_ccol)
-                to_binary_stream (ret_vec, qcore.ccol, 6 );
+                to_binary_stream (ret_vec, qcore.ccol, 6, chip );
 
-            to_binary_stream (ret_vec, qcore.islast, 1);
-            to_binary_stream (ret_vec, qcore.isneighbour, 1);
+            to_binary_stream (ret_vec, qcore.islast, 1, chip);
+            to_binary_stream (ret_vec, qcore.isneighbour, 1, chip);
 
             if (!qcore.isneighbour)
-                to_binary_stream (ret_vec, qcore.qcrow, 8 );
+                to_binary_stream (ret_vec, qcore.qcrow, 8, chip );
 
             if (print)
             {
@@ -172,10 +172,10 @@ namespace Serializer {
             }
 
 
-            to_binary_stream (ret_vec, qcore.encoded_hitmap);
+            to_binary_stream (ret_vec, qcore.encoded_hitmap, chip);
 
             if (tot)
-                to_binary_stream (ret_vec, qcore.binary_tots() );
+                to_binary_stream (ret_vec, qcore.binary_tots(), chip );
 
             new_ccol = qcore.islast;
         }

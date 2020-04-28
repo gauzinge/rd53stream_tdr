@@ -24,13 +24,11 @@ void DecoderBase::move_ahead (int nbits)
     //{
     position += nbits;
     bitsread += nbits;
-    pos += nbits;
     //}
     //else
     //{
     //position += nbits + 1;
     //bitsread += nbits + 1;
-    //pos += nbits + 1;
     //}
 
     //if (position == buffer.end() )

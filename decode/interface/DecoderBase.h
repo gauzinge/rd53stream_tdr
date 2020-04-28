@@ -47,7 +47,6 @@ class DecoderBase
 
   protected:
     vector<bool>::iterator position;
-    size_t pos;
     int clk;
     int state;
     int bitsread;
@@ -109,8 +108,6 @@ class DecoderBase
             this->file.seekg (this->filepos);
             T nwords;
             this->file.read ( (char*) &nwords, sizeof (T) );
-            stream << "###############################################################" << std::endl;
-            stream << "This chip has " << nwords << " words of " << sizeof (T) * 8 << " bits which corresponds to " << nwords * 8 * sizeof (T) / 64 << " 64 bit words" << std::endl;
 
             std::vector<T> buf (nwords);
             this->file.read ( (char*) &buf[0], nwords * sizeof (T) );
@@ -156,7 +153,9 @@ class DecoderBase
                 uint32_t disk = (moduleword >> 12) & 0xF;
 
                 ChipIdentifier chip (disk, ring, module, chipid);
+                stream << "###############################################################" << std::endl;
                 chip.print();
+                stream << "This chip has " << nwords << " words of " << sizeof (T) * 8 << " bits which corresponds to " << nwords * 8 * sizeof (T) / 64 << " 64 bit words" << std::endl;
 
                 this->chips_read++;
             }

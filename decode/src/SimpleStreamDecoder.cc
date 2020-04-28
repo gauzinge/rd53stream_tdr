@@ -33,7 +33,6 @@ void SimpleStreamDecoder::decode (bool do_tot)
     // using namespace SimpleStreamDecoder;
     state = START;
     position = buffer.begin();
-    pos = 0;
     bool islast;
     bool isneighbor;
     int hit_count = 0;
@@ -52,21 +51,22 @@ void SimpleStreamDecoder::decode (bool do_tot)
     for (size_t nword = buffsize - 1; nword > 0; nword--)
     {
         size_t bit = nword * 64;
-        std::cout << "Removing NS bit " << bit << " from word " << nword + 1 << " with value " << this->buffer.at (bit) << std::endl;
+        std::cout << "Removing NS & chip bits for easier decoding from word " << nword + 1  << std::endl;
 
         if (!this->buffer.at (bit) )
-            this->buffer.erase (this->buffer.begin() + bit, this->buffer.begin() + bit + 2);
+            this->buffer.erase (this->buffer.begin() + bit, this->buffer.begin() + bit + 3);
         else std::cout << "ERROR, NS bit 0 expected but 1 detected" << std::endl;
     }
 
-    this->print_buffer();
+    std::cout << std::endl;
+
+    //this->print_buffer();
 
     std::cout << "***************************CHIP***************************" << std::endl;
 
 
     while (true)
     {
-        //cout << state << " " << bitsread << " pos " << pos << " bit " << *position << endl;
         iterations++;
 
         if (state == END)
