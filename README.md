@@ -9,6 +9,8 @@ The library is split into two parts:
 
 In both parts, the actual functionality is implemented in C++. Python bindings are generated using `pybind11` to enable easier handling of the C++ objects, but they can also just be operated from within C++.
 
+This version is purely TEPX specific and only considers the +z end of TEPX, so only modules on Disks 9 - 12 for sside == 1.
+
 ## Encoder example
 
 To run the encoder, we need in input file containing a TTree with the digis from simulation. 
@@ -17,60 +19,38 @@ To run the encoder, we need in input file containing a TTree with the digis from
 wget https://aalbert.web.cern.ch/aalbert/public/rd53stream/itdigi.root -O example/itdigi.root
 
 make stream
-./bin/makestream -file example/itdigi.root \
-             -barrel \
-             -ringlayer 1 \
-             -diskladder 1 \
-             -nevents 1
+./bin/makestream example/itdigi.root
 ```
+You should edit the scripts/MakeStream.cc file with the right number of events or add proper command line parsing ;-) .
 
-The commandline arguments define which part of the detector is analyzed, with `-barrel` referring to the TBPX, while `-endcap` refers to the TFPX and TEPX. The `-ringlayer` and `-diskladder` arguments further narrow down the detector region, which `ringlayer` meaning `ring` for the endcaps and `layer` for the barrel (similarly for diskladder).
 
-The output will be written to `stream.txt`. The first few lines of the file will look something like this:
+The output will be written to four binary data files labelled ``dtc_x_data.dat``. The mapping of DTCs is explained in the utils/ChipIdentifier.h file. Basically disks 9 & 10 near are connected to a DTC, disks 11 & 12 near to another and the same for far. In the current implementation all modules of Disk 4 (D12) Ring 1 are connected to a single DTC for BRIL and not to any other DTC.
 
-```
-110101001|110101:10:10010001:0110000:11110101|110101:00:10010001:00111110:
-0101111110100|:11::1010011:00111011|110101:10:10010010:111110111011111000:
-0110100101111111101000010|110101:10:01101011:01000:1010|110101:00:011010
-011:011101110010:000101111110|:11::1010011:11001101|110101:10:01101100:1011
-010101010:01100100|110101:00:10000011:1101000100:00100010|:11::11111010001
-```
+The binary data files are based on 16 bit word size but this could be changed since all relevant functions are templated. The first word in the file is the header version, the next word contains the number of words compromising the header (headersize). The next headersize words contain a list of modules connected to this DTC with the Disk, Ring, Module ID & # of chips encoded in a singel 16 bit word. 
 
-Each line represents a 64-bit AURORA block (the 2-bit AURORA header has been omitted here). To make the files more human-readable, the bits are interspersed with the symbols "|" which indicates a new quarter core starting, and ":", which indicates a new field inside a quarter core. These symbols are only meant for human consumption and are ignored by the decoder! The start of the stream can thus be decomposed as follows:
+After the header, the data is present in blocks where each block contains data from an individual chip. The structure is:
+ - 1 6 bit word with the block size (number of 16 bit words) which is the number of words to read
+ - blocksize words for the chip data. This is a chopped-up version of the 64 bit aurora blocks that the RD53 chip produces, including new-stream bits and orphan bits at the end of each chip block.
 
-```
-110101001   -> new stream bit "1" + 8-bit event identifier "10101001"
-|           -> start of first qcore
-110101      -> Column address of the qcore (Always 6 bits)
-10          -> islast and isneighbour bits
-10010001    -> row address (always 8 bits, omitted if isneighbour=True)
-0110000     -> encoded hitmap (variable size)
-11110101    -> ToTs for hit pixels (2 pixels * 4 bits / pixel)
+ The 64 bit aurora blocks always start with a new-stream (NS) bit followed by 2 bit chip identifier that identiefies the ID of the chip within a 2x2 module. Numbering starts top left and increases clockwise. Then the event data is correctly encoded using the binary tree encoding as described in the RD53 manual using correct quarter core addresses etc. For the time being, it is assumed that events are contained in a single stream so there is a one-to-one mapping between events and streams. Also, the event number from the input file is used as 8 bit RD53 tag.
+Orphan bits are also correctly implemented: so if a stream ends with less than 6 orphan bits, a full 64 bit word of 0s is appended.
 
-...(and so on)...
-```
+There is a bunch of printout statements in the MakeStream.cc script that can be enabled in oder to see the quarter core information and binary tree encoding / binary data - no text files are written in this version.
 
-It is important to note that the stream building currently has limitations:
-* Each module is treated separately, ratther than correctly accounting for the module -> ROC mapping
-* event numbers, as well as row and column identifiers are arbitrary placeholder values
+This version also correctly translates the 100x25um sensor pitch digis from CMSSW to the 50x50 pixel matrix size on the RD53 and splits each 2x2 module in the individual chips so it's a fairly realistic representation.
 
 ## Decoder example 
 
-As an example, let's run the SimpleStreamDecoder on the input file `example/stream.txt`. We can do it in two ways: Either entirely in C++:
+As an example, let's run the SimpleStreamDecoder on the `dtc_x_data.dat`. 
 
 ```bash
 make simple
-./bin/runsimple -f example/stream.txt
+./bin/runsimple dtc_x_data.dat
 ```
 
-or using the python bindings (assuming we are in a virtual environment with python3):
+The decoder reads the file, first the header and then the individual chunks for each chip and prints out the header info (version and module list) followed by the decoded event data for each chip. The decoder has been verified against the encoder and produces the same result. 
 
-```bash
-pip install pybind11
-make py
-./python/run_simple_decoder.py example/stream.txt
-```
+Please note that in order to simplify decoding, the decoder in the `SimpleStreamDecoder::decode()` method removes the NS bits as well as the chip ID form all but the first 64bit aurora block to simplify decoding.
 
-In both cases, the same underlying C++ code is executed. Currently, the code outputs a bunch of debugging statements as it parses the stream. The decoder is not fully validated, yet. Of course, you can also run the decoder on the `stream.txt` file created in the encoding step above.
+Have fun!
 
-Python bindings for modules other than the simple decoder will be added soon.
