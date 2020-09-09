@@ -307,6 +307,14 @@ void QCore::encode_hitmap ()
 
     }
 
+    //std::cout << "HITMAP" << std::endl;
+    //std::cout << row1[0] << row1[1] << "|" << row1[2] << row1[3] << "|" << row1[4] << row1[5] << "|" << row1[6] << row1[7] << std::endl;
+    //std::cout << row2[0] << row2[1] << "|" << row2[2] << row2[3] << "|" << row2[4] << row2[5] << "|" << row2[6] << row2[7] << std::endl;
+    //std::cout << "TREE" << std::endl;
+    //std::cout << "   " << row_or[0] << row_or[1] << std::endl;
+    //std::cout << " " << s2_row1[0] << s2_row1[1] << "  " << s2_row2[0] << s2_row2[1] << std::endl;
+    //std::cout <<  s3_row1[0] << s3_row1[1] << s3_row1[2] << s3_row1[3] << s3_row2[0] << s3_row2[1] << s3_row2[2] << s3_row2[3] << std::endl;
+
     //this->encoded_hitmap.insert (this->encoded_hitmap.end(), row1_enc.begin(), row1_enc.end() );
     //this->encoded_hitmap.insert (this->encoded_hitmap.end(), row2_enc.begin(), row2_enc.end() );
 
