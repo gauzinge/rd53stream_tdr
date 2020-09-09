@@ -175,7 +175,9 @@ void SimpleStreamDecoder::decode (bool do_tot)
                 if (isneighbor)
                 {
                     state = ROWOR;
-                    qcrow += 2;
+                    qcrow += 1;
+                    //Reported by Mykyta
+                    //qcrow += 2;
                     std::cout <<  "QCrow: " << qcrow << " | IsLast: " << islast << " | IsNeighbor: " << isneighbor << std::endl;
                     std::cout << "***************" << std::endl;
                     //std::cout << "IsLast: " << islast << " IsNeighbor: " << isneighbor << std::endl;
