@@ -1,4 +1,5 @@
 *.o
+*.idea
 obj/
 bin/
 pyrd53

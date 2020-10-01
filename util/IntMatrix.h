@@ -20,6 +20,7 @@ class IntMatrix {
         void fill(uint32_t row, uint32_t col, uint32_t adc);
         void convertPitch_andFill(uint32_t row, uint32_t col, uint32_t adc);
         uint32_t value(uint32_t row, uint32_t col);
+        std::vector<std::pair<uint32_t,uint32_t>> hits();
         IntMatrix submatrix(uint32_t chip);
         //IntMatrix submatrix(uint32_t row, uint32_t nrow, uint32_t col, uint32_t ncol);
         std::vector<std::vector<ADC>> data;

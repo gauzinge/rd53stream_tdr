@@ -98,6 +98,18 @@ uint32_t IntMatrix::value(uint32_t row, uint32_t col)
     return this->data.at(row).at(col);
 }
 
+std::vector<std::pair<uint32_t,uint32_t>> IntMatrix::hits()
+{
+    std::vector<std::pair<uint32_t,uint32_t>> result;
+    for(int col = 0; col < this->cols; col++) {
+        for(int row = 0; row < this->rows; row++) {
+            ADC adc_val = this->data.at(row).at(col);
+            if (adc_val) result.push_back(std::make_pair(col,row));
+        }
+    }
+    return result;
+}
+
 void IntMatrix::calculate_size()
 {
     this->rows = this->data.size();
