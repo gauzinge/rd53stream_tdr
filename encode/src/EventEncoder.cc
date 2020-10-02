@@ -16,30 +16,44 @@ EncodedEvent::EncodedEvent ()
     is_empty_var = false;
 }
 
+std::pair<ChipIdentifier, std::vector<uint16_t>> EncodedEvent::get_next_chip()
+{
+    std::pair<ChipIdentifier, std::vector<uint16_t>> ret;
+    if (streams_iterator != streams.end()) {
+        ret = *streams_iterator;
+        streams_iterator++;
+    }
+    return ret;
+}
+
+void EncodedEvent::print_chip(ChipIdentifier identifier) {
+    std::vector<uint16_t> stream = streams[identifier];
+    IntMatrix chip_matrix = chip_matrices[identifier];
+    std::cout << "Disk: " << identifier.mdisk << ", Ring: " << identifier.mring << ", Module: " << identifier.mmodule << ", Chip: " << identifier.mchip << std::endl;
+    std::cout << "\tHits: ";
+    for(auto hit : chip_matrix.hits()) std::cout << "(col " << hit.first << ", row " << hit.second << ") ";
+    std::cout << std::endl;
+    std::cout << "\tQcores: " << std::endl;
+    Encoder enc;
+    std::vector<QCore> qcores = enc.qcores (chip_matrix, 0, identifier.mmodule, identifier.mchip);
+    for(auto qcore : qcores) {
+        std::cout << "\t\tCol: " << qcore.ccol << ", Row: " << qcore.qcrow << ", islast: " << qcore.islast << ", isneighbour: " << qcore.isneighbour << std::endl;
+        std::cout << "\t\t";
+        for(auto hit : qcore.hitmap) std::cout << hit << " ";
+        std::cout << std::endl;
+    }
+    std::cout << "\tStream: ";
+    for(auto word : stream) {
+        std::bitset<16> word_binary(word);
+        std::cout << word_binary.to_string() << " ";
+    }
+    std::cout << std::endl;
+}
+
 void EncodedEvent::print() {
     for(auto streams_item : streams) {
         ChipIdentifier identifier = streams_item.first;
-        std::vector<uint16_t> stream = streams_item.second;
-        IntMatrix chip_matrix = chip_matrices[identifier];
-        std::cout << "Disk: " << identifier.mdisk << ", Ring: " << identifier.mring << ", Module: " << identifier.mmodule << ", Chip: " << identifier.mchip << std::endl;
-        std::cout << "\tHits: ";
-        for(auto hit : chip_matrix.hits()) std::cout << "(col " << hit.first << ", row " << hit.second << ") ";
-        std::cout << std::endl;
-        std::cout << "\tQcores: " << std::endl;
-        Encoder enc;
-        std::vector<QCore> qcores = enc.qcores (chip_matrix, 0, identifier.mmodule, identifier.mchip);
-        for(auto qcore : qcores) {
-            std::cout << "\t\tCol: " << qcore.ccol << ", Row: " << qcore.qcrow << ", islast: " << qcore.islast << ", isneighbour: " << qcore.isneighbour << std::endl;
-            std::cout << "\t\t";
-            for(auto hit : qcore.hitmap) std::cout << hit << " ";
-            std::cout << std::endl;
-        }
-        std::cout << "\tStream: ";
-        for(auto word : stream) {
-            std::bitset<16> word_binary(word);
-            std::cout << word_binary.to_string() << " ";
-        }
-        std::cout << std::endl;
+        print_chip(identifier);
     }
 }
 

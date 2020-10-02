@@ -20,9 +20,13 @@ namespace Serializer {
         size_t sizeT = sizeof (T) * 8; //in bits
         std::vector<T> ret_vec;
         size_t ret_vec_size_calc = vec.size() / sizeT;
-        ret_vec.reserve (ret_vec_size_calc + 1);
+        // NOTE removed the push back of the size
+        ret_vec.reserve (ret_vec_size_calc+2); //  ret_vec_size_calc + 1
         //now insert the number of words to be read after reading this word
-        ret_vec.push_back (static_cast<T> (ret_vec_size_calc) );
+        //ret_vec.push_back (static_cast<T> (ret_vec_size_calc) );
+
+        // instead put my handmade header
+        ret_vec.push_back (static_cast<T> (0x34AB));
 
         //now loop the word-sized chunks of vec
         for (size_t word = 0; word < ret_vec_size_calc; word++)
@@ -40,6 +44,9 @@ namespace Serializer {
 
             ret_vec.push_back (tmp_word);
         }
+
+        // put my handmade trailer
+        ret_vec.push_back (static_cast<T> (0x748D));
 
         return ret_vec;
     }

@@ -6,6 +6,13 @@
 class ChipIdentifier
 {
   public:
+    ChipIdentifier () :
+        mdisk (99),
+        mring (99),
+        mmodule (99),
+        mchip (99)
+    {;}
+
     ChipIdentifier (uint32_t disk, uint32_t ring, uint32_t module, uint32_t chip) :
         mdisk (disk),
         mring (ring),
@@ -78,6 +85,17 @@ class ChipIdentifier
         else if (ring == 2) mlinkfactor = .5;
         else if (ring > 2 ) mlinkfactor = .25;
 
+    }
+
+    // copy constructur
+    ChipIdentifier (const ChipIdentifier &identifier) {
+        mdisk = identifier.mdisk;
+        mring = identifier.mring;
+        mmodule = identifier.mmodule;
+        mchip = identifier.mchip;
+        mquarter = identifier.mquarter;
+        mdtc = identifier.mdtc;
+        mlinkfactor = identifier.mlinkfactor;
     }
 
     void print() const

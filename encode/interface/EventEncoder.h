@@ -14,13 +14,16 @@ class EncodedEvent
     void set_empty(bool pValue) { is_empty_var = pValue; }
     bool is_empty() { return is_empty_var; }
     void set_chip_matrices(std::map<ChipIdentifier, IntMatrix> pChip_matrices) { chip_matrices = pChip_matrices; }
-    void set_streams(std::map<ChipIdentifier, std::vector<uint16_t>> pStreams) { streams = pStreams; }
+    void set_streams(std::map<ChipIdentifier, std::vector<uint16_t>> pStreams) { streams = pStreams; streams_iterator = streams.begin(); }
+    std::pair<ChipIdentifier, std::vector<uint16_t>> get_next_chip();
+    void print_chip(ChipIdentifier identifier);
     void print ();
 
   private:
     bool is_empty_var;
     std::map<ChipIdentifier, IntMatrix> chip_matrices;
     std::map<ChipIdentifier, std::vector<uint16_t>> streams;
+    std::map<ChipIdentifier, std::vector<uint16_t>>::iterator streams_iterator;
 
 };
 #endif
