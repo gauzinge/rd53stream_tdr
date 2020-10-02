@@ -22,6 +22,7 @@ PYBIND11_MODULE(pybindings, m) {
     py::class_<EncodedEvent>(m, "EncodedEvent")
         .def(py::init())
         .def("is_empty", &EncodedEvent::is_empty)
+        .def("print_chip", &EncodedEvent::print_chip)
         .def("print", &EncodedEvent::print)
         .def("get_next_chip", &EncodedEvent::get_next_chip);
 
