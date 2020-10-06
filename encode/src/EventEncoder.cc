@@ -16,6 +16,14 @@ EncodedEvent::EncodedEvent ()
     is_empty_var = false;
 }
 
+/*EncodedEvent::EncodedEvent (const EncodedEvent &ev)
+{
+    is_empty_var = bool(ev.is_empty_var);
+    chip_matrices = std::map<ChipIdentifier, IntMatrix> (ev.chip_matrices);
+    streams = std::map<ChipIdentifier, std::vector<uint16_t>> (ev.streams);
+    streams_iterator = std::map<ChipIdentifier, std::vector<uint16_t>>::iterator (ev.streams_iterator);
+}*/
+
 std::pair<ChipIdentifier, std::vector<uint16_t>> EncodedEvent::get_next_chip()
 {
     std::pair<ChipIdentifier, std::vector<uint16_t>> ret;
@@ -132,7 +140,8 @@ EncodedEvent EventEncoder::get_next_event()
         uint32_t adc = trv_adc->At (ientry);
 
         //convert to module address (different row and column numbers because 50x50)
-        module_matrices.at (tmp_id).convertPitch_andFill (row, col, adc);
+        //module_matrices.at (tmp_id).convertPitch_andFill (row, col, adc);
+        module_matrices.at (tmp_id).fill (row, col, adc);
         ientry++;
     }//end module loop
 

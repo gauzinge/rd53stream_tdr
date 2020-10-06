@@ -13,7 +13,7 @@ int Encoder::find_last_qrow (IntMatrix& matrix, uint32_t ccol)
 
     for (uint32_t r = 0; r < matrix.size_row(); r++)
     {
-        for (uint32_t c = ccol * this->col_factor; c < (ccol + 1) *this->col_factor; c++)
+        for (uint32_t c = ccol * this->sensor_col_factor; c < (ccol + 1) *this->sensor_col_factor; c++)
         {
             if (matrix.data[r][c] > 0)
             {
@@ -28,7 +28,7 @@ int Encoder::find_last_qrow (IntMatrix& matrix, uint32_t ccol)
 
     else
         //this is the row in units of quarter core size, so 2
-        return last_row / this->row_factor;
+        return last_row / this->sensor_row_factor;
 };
 
 
@@ -42,7 +42,7 @@ vector<QCore> Encoder::qcores (IntMatrix& matrix, int event, int module, int chi
     vector<QCore> qcores;
 
     // Loop over core columns (ccol)
-    uint32_t nccol = matrix.size_col() / this->col_factor;
+    uint32_t nccol = matrix.size_col() / this->sensor_col_factor;
 
     //assert (nccol < 54);
 
@@ -64,13 +64,15 @@ vector<QCore> Encoder::qcores (IntMatrix& matrix, int event, int module, int chi
             qcore_adcs.reserve (16);
             bool any_nonzero = false;
 
-            for (uint32_t j = 0; j < this->row_factor; j++)
+            for (uint32_t j = 0; j < this->chip_row_factor; j++)
             {
-                for (uint32_t i = ccol * this->col_factor; i < (ccol + 1) *this->col_factor; i++)
+                for (uint32_t i = 0; i < this->chip_col_factor; i++)
                 {
                     //stream <<   "  row: " << qcrow* this->row_factor + j << " Col " << i << std::endl;
                     //assert (qcrow * this->row_factor + j < matrix.size_row());
-                    uint32_t value = matrix.data[qcrow * this->row_factor + j][i];
+                    uint32_t sensor_row = j*(this->sensor_row_factor/this->chip_row_factor) + (i%(this->chip_col_factor/this->sensor_col_factor));
+                    uint32_t sensor_col = (i - (i%(this->chip_col_factor/this->sensor_col_factor)))/(this->chip_col_factor/this->sensor_col_factor);
+                    uint32_t value = matrix.data[qcrow * this->sensor_row_factor + sensor_row][ccol * this->sensor_col_factor + sensor_col];
                     any_nonzero |= value > 0;
                     qcore_adcs.push_back (value);
                 }

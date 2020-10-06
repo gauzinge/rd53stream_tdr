@@ -63,6 +63,9 @@ void IntMatrix::fill(uint32_t row, uint32_t col, uint32_t adc)
     //std::cout << "Warning, col " << col << " larger than matrix: " <<cols << std::endl;
     if(row < this->rows && col < this->cols)
         this->data[row][col]=adc;
+    //else {
+    //    std::cout << "Warning row or col are largen than the matrix " << row << ", " << col << std::endl;
+    //}
 }
 
 //for some weird reason the digis have larger row and col numbers than the actual chip
@@ -119,8 +122,8 @@ void IntMatrix::calculate_size()
 
 IntMatrix IntMatrix::submatrix(uint32_t chip)
 {
-    size_t nrow = 336;
-    size_t ncol = 432;
+    size_t nrow = this->rows/2;
+    size_t ncol = this->cols/2;
 
     IntMatrix aMatrix;
     assert(chip < 4);
