@@ -31,7 +31,11 @@ std::pair<ChipIdentifier, std::vector<uint16_t>> EncodedEvent::get_next_chip()
         ret = *streams_iterator;
         streams_iterator++;
     }
-    return ret;
+    IntMatrix chip_matrix = chip_matrices[ret.first];
+    if (chip_matrix.hits().size() > 0)
+        return ret;
+    else
+        return this->get_next_chip();
 }
 
 void EncodedEvent::print_chip(ChipIdentifier identifier) {
