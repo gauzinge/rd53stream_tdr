@@ -30,18 +30,32 @@ std::pair<ChipIdentifier, std::vector<uint16_t>> EncodedEvent::get_next_chip()
     if (streams_iterator != streams.end()) {
         ret = *streams_iterator;
         streams_iterator++;
-    }
-    IntMatrix chip_matrix = chip_matrices[ret.first];
-    if (chip_matrix.hits().size() > 0)
+        IntMatrix chip_matrix = chip_matrices[ret.first];
+        if (chip_matrix.hits().size() > 0)
+            return ret;
+        else
+            return this->get_next_chip();
+    } else {
+        // return empty
         return ret;
-    else
-        return this->get_next_chip();
+    }
 }
 
 void EncodedEvent::print_chip(ChipIdentifier identifier) {
     std::vector<uint16_t> stream = streams[identifier];
     IntMatrix chip_matrix = chip_matrices[identifier];
     std::cout << "Disk: " << identifier.mdisk << ", Ring: " << identifier.mring << ", Module: " << identifier.mmodule << ", Chip: " << identifier.mchip << std::endl;
+    std::cout << "\tNumber of clusters: " << chip_clusters[identifier].size() << std::endl;
+    int cluster_id = 0;
+    for (auto cluster : chip_clusters[identifier]) {
+        std::cout << "\t\tCluster " << cluster_id << ", Hits: ";
+        std::vector<int> hits = cluster.GetHits();
+        for(auto hit: hits) {
+            std::cout << "(col " << ((hit >> 0) & 0xffff) << ", row " << ((hit >> 16) & 0xffff) << ") ";
+        }
+        std::cout << std::endl;
+        cluster_id++;
+    }
     std::cout << "\tHits: ";
     for(auto hit : chip_matrix.hits()) std::cout << "(col " << hit.first << ", row " << hit.second << ") ";
     std::cout << std::endl;
@@ -76,11 +90,12 @@ EventEncoder::EventEncoder (std::string pFilename)
     reader = new TTreeReader ("BRIL_IT_Analysis/Digis", file);
     trv_barrel = new TTreeReaderArray<bool> (*reader, "barrel");
     trv_module = new TTreeReaderArray<uint32_t> (*reader, "module");
-    trv_adc = new TTreeReaderArray<uint32_t> (*reader, "adc");
-    trv_col = new TTreeReaderArray<uint32_t> (*reader, "column");
-    trv_row = new TTreeReaderArray<uint32_t> (*reader, "row");
+    //trv_adc = new TTreeReaderArray<uint32_t> (*reader, "adc");
+    //trv_col = new TTreeReaderArray<uint32_t> (*reader, "column");
+    //trv_row = new TTreeReaderArray<uint32_t> (*reader, "row");
     trv_ringlayer = new TTreeReaderArray<uint32_t> (*reader, "ringlayer");
     trv_diskladder = new TTreeReaderArray<uint32_t> (*reader, "diskladder");
+    trv_clusters = new TTreeReaderArray<std::vector<int>> (*reader, "clusters");
 }
 
 EncodedEvent EventEncoder::get_next_event()
@@ -101,6 +116,8 @@ EncodedEvent EventEncoder::get_next_event()
     // 2D matrices of pixel ADCs, key == chip identifier
     std::map<ChipIdentifier, IntMatrix> module_matrices;
     std::map<ChipIdentifier, IntMatrix> chip_matrices;
+    std::map<ChipIdentifier, std::vector<SimpleCluster>> module_clusters;
+    std::map<ChipIdentifier, std::vector<SimpleCluster>> chip_clusters;
     // QCore objects per module, key == chip identifier
     std::map<ChipIdentifier, std::vector<QCore>> qcores;
     std::map<ChipIdentifier, std::vector<uint16_t>> streams;
@@ -139,14 +156,26 @@ EncodedEvent EventEncoder::get_next_event()
         //in all other cases the Intmatrix for that module exists already
 
         //get the row, col and ADC (attention, sensor row and column address) for the current module
-        uint32_t row = trv_row->At (ientry);
-        uint32_t col = trv_col->At (ientry);
-        uint32_t adc = trv_adc->At (ientry);
+        std::vector<int> hit_vec = trv_clusters->At(ientry);
+        std::map<ChipIdentifier, std::vector<SimpleCluster>>::iterator it = module_clusters.find(tmp_id);
+        if(it != module_clusters.end()) {
+            it->second.push_back(SimpleCluster(nrows_module,ncols_module,hit_vec));
+        } else {
+            std::vector<SimpleCluster> tmp;
+            tmp.push_back(SimpleCluster(nrows_module,ncols_module,hit_vec));
+            module_clusters[tmp_id] = tmp;
+        }
+        for (auto hit : hit_vec) {
+            uint32_t row = (hit >> 16) & 0xffff;
+            uint32_t col = (hit >> 0) & 0xffff;
+            uint32_t adc = 1;
+            module_matrices.at (tmp_id).fill (row, col, adc);
+        }
 
         //convert to module address (different row and column numbers because 50x50)
         //module_matrices.at (tmp_id).convertPitch_andFill (row, col, adc);
-        module_matrices.at (tmp_id).fill (row, col, adc);
         ientry++;
+        //if(module_matrices.size() > 5) break;
     }//end module loop
 
     std::cout << "Finished reading full data for event from the tree; found " << module_matrices.size() << " modules for TEPX" << std::endl;
@@ -177,10 +206,31 @@ EncodedEvent EventEncoder::get_next_event()
         {
             ChipIdentifier chipId (matrix.first.mdisk, matrix.first.mring, matrix.first.mmodule, chip);
             IntMatrix tmp_matrix = matrix.second.submatrix (chip);
-            chip_matrices.emplace (chipId, tmp_matrix);
+            if ( tmp_matrix.hits().size() > 0 ) chip_matrices.emplace (chipId, tmp_matrix);
         }
     }
     encoded_event.set_chip_matrices(chip_matrices);
+
+    // now chip clusters
+    for (auto current_module : module_clusters)
+    {
+        std::vector<SimpleCluster> current_module_clusters = current_module.second;
+        for (auto module_cluster : current_module_clusters) {
+            std::map<int, SimpleCluster> clusters_per_chip = module_cluster.GetClustersPerChip();
+            for(auto cluster : clusters_per_chip) {
+                ChipIdentifier chipId (current_module.first.mdisk, current_module.first.mring, current_module.first.mmodule, cluster.first);
+                std::map<ChipIdentifier, std::vector<SimpleCluster>>::iterator it = chip_clusters.find(chipId);
+                if(it != chip_clusters.end()) {
+                    it->second.push_back(cluster.second);
+                } else {
+                    std::vector<SimpleCluster> tmp;
+                    tmp.push_back(cluster.second);
+                    chip_clusters[chipId] = tmp;
+                }
+            }
+        }
+    }
+    encoded_event.set_chip_clusters(chip_clusters);
 
     std::cout << "Finished picking apart modules; converted " << module_matrices.size() << " modules for TEPX to " << chip_matrices.size() << " chips" << std::endl;
 

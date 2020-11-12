@@ -26,7 +26,8 @@ PYBIND11_MODULE(pybindings, m) {
         .def("get_chip_hits", &EncodedEvent::get_chip_hits)
         .def("print_chip", &EncodedEvent::print_chip)
         .def("print", &EncodedEvent::print)
-        .def("get_next_chip", &EncodedEvent::get_next_chip);
+        .def("get_next_chip", &EncodedEvent::get_next_chip)
+        .def("get_chip_nclusters", &EncodedEvent::get_chip_nclusters);
 
     py::class_<EventEncoder>(m, "EventEncoder")
         .def(py::init<std::string>())
