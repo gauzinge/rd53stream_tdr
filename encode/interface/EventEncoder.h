@@ -71,6 +71,8 @@ class EncodedEvent
     //EncodedEvent (const EncodedEvent &ev);
     void set_empty(bool pValue) { is_empty_var = pValue; }
     bool is_empty() { return is_empty_var; }
+    void set_hlt_present(bool pValue) { is_hlt_present_var = pValue; }
+    bool is_hlt_present() { return is_hlt_present_var; }
     void set_chip_clusters(std::map<ChipIdentifier, std::vector<SimpleCluster>> pChip_clusters) { chip_clusters = pChip_clusters; }
     void set_chip_matrices(std::map<ChipIdentifier, IntMatrix> pChip_matrices) { chip_matrices = pChip_matrices; }
     void set_streams(std::map<ChipIdentifier, std::vector<uint16_t>> pStreams) { streams = pStreams; streams_iterator = streams.begin(); }
@@ -82,6 +84,7 @@ class EncodedEvent
 
   private:
     bool is_empty_var;
+    bool is_hlt_present_var;
     std::map<ChipIdentifier, std::vector<SimpleCluster>> chip_clusters;
     std::map<ChipIdentifier, IntMatrix> chip_matrices;
     std::map<ChipIdentifier, std::vector<uint16_t>> streams;
@@ -96,20 +99,31 @@ class EventEncoder
 {
 
   public:
-    EventEncoder (std::string pFilename);
+    EventEncoder (std::string pFilenameRaw, std::string pFilenameHlt);
+    EventEncoder (std::string pFilenameRaw) : EventEncoder(pFilenameRaw, "none") {};
     EncodedEvent get_next_event();
 
   private:
-    TFile* file;
-    TTreeReader* reader;
-    TTreeReaderArray<bool>* trv_barrel;
-    TTreeReaderArray<uint32_t>* trv_module;
-    //TTreeReaderArray<uint32_t>* trv_adc;
-    //TTreeReaderArray<uint32_t>* trv_col;
-    //TTreeReaderArray<uint32_t>* trv_row;
-    TTreeReaderArray<uint32_t>* trv_ringlayer;
-    TTreeReaderArray<uint32_t>* trv_diskladder;
-    TTreeReaderArray<std::vector<int>>* trv_clusters;
+    // digis file
+    TFile* file_raw;
+    TTreeReader* reader_raw;
+    TTreeReaderArray<bool>* trv_barrel_raw;
+    TTreeReaderArray<uint32_t>* trv_module_raw;
+    TTreeReaderArray<uint32_t>* trv_ringlayer_raw;
+    TTreeReaderArray<uint32_t>* trv_diskladder_raw;
+    TTreeReaderArray<uint32_t>* trv_adc_raw;
+    TTreeReaderArray<uint32_t>* trv_col_raw;
+    TTreeReaderArray<uint32_t>* trv_row_raw;
+    // hlt file
+    bool is_hlt_present;
+    TFile* file_hlt;
+    TTreeReader* reader_hlt;
+    TTreeReaderArray<bool>* trv_barrel_hlt;
+    TTreeReaderArray<uint32_t>* trv_module_hlt;
+    TTreeReaderArray<uint32_t>* trv_ringlayer_hlt;
+    TTreeReaderArray<uint32_t>* trv_diskladder_hlt;
+    TTreeReaderArray<std::vector<int>>* trv_clusters_hlt;
+    // common
     const uint32_t nrows_module = 1344;
     const uint32_t ncols_module = 432;
     uint32_t event_id;
