@@ -42,45 +42,48 @@ std::pair<ChipIdentifier, std::vector<uint16_t>> EncodedEvent::get_next_chip()
     }
 }
 
-void EncodedEvent::print_chip(ChipIdentifier identifier) {
+std::string EncodedEvent::chip_str(ChipIdentifier identifier) {
     std::vector<uint16_t> stream = streams[identifier];
     IntMatrix chip_matrix = chip_matrices[identifier];
-    std::cout << "Disk: " << identifier.mdisk << ", Ring: " << identifier.mring << ", Module: " << identifier.mmodule << ", Chip: " << identifier.mchip << std::endl;
-    std::cout << "\tNumber of clusters: " << chip_clusters[identifier].size() << std::endl;
+    std::ostringstream out;
+    out << "Disk: " << identifier.mdisk << ", Ring: " << identifier.mring << ", Module: " << identifier.mmodule << ", Chip: " << identifier.mchip << std::endl;
+    out << "\tNumber of clusters: " << chip_clusters[identifier].size() << std::endl;
     int cluster_id = 0;
     for (auto cluster : chip_clusters[identifier]) {
-        std::cout << "\t\tCluster " << cluster_id << ", Hits: ";
+        out << "\t\tCluster " << cluster_id << ", Hits: ";
         std::vector<int> hits = cluster.GetHits();
         for(auto hit: hits) {
-            std::cout << "(col " << ((hit >> 0) & 0xffff) << ", row " << ((hit >> 16) & 0xffff) << ") ";
+            out << "(col " << ((hit >> 0) & 0xffff) << ", row " << ((hit >> 16) & 0xffff) << ") ";
         }
-        std::cout << std::endl;
+        out << std::endl;
         cluster_id++;
     }
-    std::cout << "\tHits: ";
-    for(auto hit : chip_matrix.hits()) std::cout << "(col " << hit.first << ", row " << hit.second << ") ";
-    std::cout << std::endl;
-    std::cout << "\tQcores: " << std::endl;
+    out << "\tHits: ";
+    for(auto hit : chip_matrix.hits()) out << "(col " << hit.first << ", row " << hit.second << ") ";
+    out << std::endl;
+    out << "\tQcores: " << std::endl;
     Encoder enc;
     std::vector<QCore> qcores = enc.qcores (chip_matrix, 0, identifier.mmodule, identifier.mchip);
     for(auto qcore : qcores) {
-        std::cout << "\t\tCol: " << qcore.ccol << ", Row: " << qcore.qcrow << ", islast: " << qcore.islast << ", isneighbour: " << qcore.isneighbour << std::endl;
-        std::cout << "\t\t";
-        for(auto hit : qcore.hitmap) std::cout << hit << " ";
-        std::cout << std::endl;
+        out << "\t\tCol: " << qcore.ccol << ", Row: " << qcore.qcrow << ", islast: " << qcore.islast << ", isneighbour: " << qcore.isneighbour << std::endl;
+        out << "\t\t";
+        for(auto hit : qcore.hitmap) out << hit << " ";
+        out << std::endl;
     }
-    std::cout << "\tStream: ";
+    out << "\tStream: ";
     for(auto word : stream) {
         std::bitset<16> word_binary(word);
-        std::cout << word_binary.to_string() << " ";
+        out << word_binary.to_string() << " ";
     }
-    std::cout << std::endl;
+    out << std::endl;
+
+    return out.str();
 }
 
 void EncodedEvent::print() {
     for(auto streams_item : streams) {
         ChipIdentifier identifier = streams_item.first;
-        print_chip(identifier);
+        std::cout << chip_str(identifier);
     }
 }
 

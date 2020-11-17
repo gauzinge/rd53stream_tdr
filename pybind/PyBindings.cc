@@ -26,9 +26,10 @@ PYBIND11_MODULE(pybindings, m) {
         .def("is_hlt_present", &EncodedEvent::is_hlt_present)
         .def("is_raw_present", &EncodedEvent::is_raw_present)
         .def("get_chip_hits", &EncodedEvent::get_chip_hits)
-        .def("print_chip", &EncodedEvent::print_chip)
+        .def("chip_str", &EncodedEvent::chip_str)
         .def("print", &EncodedEvent::print)
         .def("get_next_chip", &EncodedEvent::get_next_chip)
+        .def("get_stream", &EncodedEvent::get_stream)
         .def("get_chip_nclusters", &EncodedEvent::get_chip_nclusters);
 
     py::class_<EventEncoder>(m, "EventEncoder")
