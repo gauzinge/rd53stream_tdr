@@ -71,6 +71,8 @@ class EncodedEvent
     //EncodedEvent (const EncodedEvent &ev);
     void set_empty(bool pValue) { is_empty_var = pValue; }
     bool is_empty() { return is_empty_var; }
+    void set_raw_present(bool pValue) { is_raw_present_var = pValue; }
+    bool is_raw_present() { return is_raw_present_var; }
     void set_hlt_present(bool pValue) { is_hlt_present_var = pValue; }
     bool is_hlt_present() { return is_hlt_present_var; }
     void set_chip_clusters(std::map<ChipIdentifier, std::vector<SimpleCluster>> pChip_clusters) { chip_clusters = pChip_clusters; }
@@ -84,6 +86,7 @@ class EncodedEvent
 
   private:
     bool is_empty_var;
+    bool is_raw_present_var;
     bool is_hlt_present_var;
     std::map<ChipIdentifier, std::vector<SimpleCluster>> chip_clusters;
     std::map<ChipIdentifier, IntMatrix> chip_matrices;
@@ -100,11 +103,13 @@ class EventEncoder
 
   public:
     EventEncoder (std::string pFilenameRaw, std::string pFilenameHlt);
-    EventEncoder (std::string pFilenameRaw) : EventEncoder(pFilenameRaw, "none") {};
+    EventEncoder (std::string pFilename, bool pInjectingRaw);
+    void init_files(std::string pFilenameRaw, std::string pFilenameHlt);
     EncodedEvent get_next_event();
 
   private:
     // digis file
+    bool is_raw_present;
     TFile* file_raw;
     TTreeReader* reader_raw;
     TTreeReaderArray<bool>* trv_barrel_raw;
