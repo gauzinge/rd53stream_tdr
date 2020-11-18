@@ -85,10 +85,18 @@ class EncodedEvent
     std::string chip_str(ChipIdentifier identifier);
     void print ();
 
+    // setters getters
+    void set_event_id_raw(uint32_t value) { event_id_raw = value; }
+    uint32_t get_event_id_raw() { return event_id_raw; }
+    void set_event_id_hlt(uint32_t value) { event_id_hlt = value; }
+    uint32_t get_event_id_hlt() { return event_id_hlt; }
+
   private:
     bool is_empty_var;
     bool is_raw_present_var;
     bool is_hlt_present_var;
+    uint32_t event_id_raw;
+    uint32_t event_id_hlt;
     std::map<ChipIdentifier, std::vector<SimpleCluster>> chip_clusters;
     std::map<ChipIdentifier, IntMatrix> chip_matrices;
     std::map<ChipIdentifier, std::vector<uint16_t>> streams;
@@ -113,6 +121,7 @@ class EventEncoder
     bool is_raw_present;
     TFile* file_raw;
     TTreeReader* reader_raw;
+    TTreeReaderValue<uint32_t>* trv_event_id_raw;
     TTreeReaderArray<bool>* trv_barrel_raw;
     TTreeReaderArray<uint32_t>* trv_module_raw;
     TTreeReaderArray<uint32_t>* trv_ringlayer_raw;
@@ -124,6 +133,7 @@ class EventEncoder
     bool is_hlt_present;
     TFile* file_hlt;
     TTreeReader* reader_hlt;
+    TTreeReaderValue<uint32_t>* trv_event_id_hlt;
     TTreeReaderArray<bool>* trv_barrel_hlt;
     TTreeReaderArray<uint32_t>* trv_module_hlt;
     TTreeReaderArray<uint32_t>* trv_ringlayer_hlt;

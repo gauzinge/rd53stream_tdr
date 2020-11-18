@@ -117,6 +117,7 @@ void EventEncoder::init_files (std::string pFilenameRaw, std::string pFilenameHl
     if (is_raw_present) {
         file_raw = new TFile (pFilenameRaw.c_str() );
         reader_raw = new TTreeReader ("BRIL_IT_Analysis/Digis", file_raw);
+        trv_event_id_raw = new TTreeReaderValue<uint32_t> (*reader_raw, "event");
         trv_barrel_raw = new TTreeReaderArray<bool> (*reader_raw, "barrel");
         trv_module_raw = new TTreeReaderArray<uint32_t> (*reader_raw, "module");
         trv_ringlayer_raw = new TTreeReaderArray<uint32_t> (*reader_raw, "ringlayer");
@@ -133,6 +134,7 @@ void EventEncoder::init_files (std::string pFilenameRaw, std::string pFilenameHl
     if (is_hlt_present) {
         file_hlt = new TFile (pFilenameHlt.c_str() );
         reader_hlt = new TTreeReader ("BRIL_IT_Analysis/Digis", file_hlt);
+        trv_event_id_hlt = new TTreeReaderValue<uint32_t> (*reader_hlt, "event");
         trv_barrel_hlt = new TTreeReaderArray<bool> (*reader_hlt, "barrel");
         trv_module_hlt = new TTreeReaderArray<uint32_t> (*reader_hlt, "module");
         trv_ringlayer_hlt = new TTreeReaderArray<uint32_t> (*reader_hlt, "ringlayer");
@@ -181,6 +183,8 @@ EncodedEvent EventEncoder::get_next_event()
     if (is_raw_present) {
         //
         std::cout << "!!! Starting Raw digis read loop" << std::endl;
+        //
+        encoded_event.set_event_id_raw(**trv_event_id_raw);
 
         // iteration
         uint32_t ientry = 0;
@@ -240,6 +244,8 @@ EncodedEvent EventEncoder::get_next_event()
 
         //
         std::cout << "!!! Starting HLT cluster read loop" << std::endl;
+        //
+        encoded_event.set_event_id_hlt(**trv_event_id_hlt);
 
         // iteration
         uint32_t ientry = 0;

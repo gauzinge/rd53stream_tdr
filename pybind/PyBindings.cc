@@ -30,7 +30,9 @@ PYBIND11_MODULE(pybindings, m) {
         .def("print", &EncodedEvent::print)
         .def("get_next_chip", &EncodedEvent::get_next_chip)
         .def("get_stream", &EncodedEvent::get_stream)
-        .def("get_chip_nclusters", &EncodedEvent::get_chip_nclusters);
+        .def("get_chip_nclusters", &EncodedEvent::get_chip_nclusters)
+        .def("get_event_id_raw", &EncodedEvent::get_event_id_raw)
+        .def("get_event_id_hlt", &EncodedEvent::get_event_id_hlt);
 
     py::class_<EventEncoder>(m, "EventEncoder")
         .def(py::init<std::string, std::string>())
