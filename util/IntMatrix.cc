@@ -22,7 +22,7 @@ IntMatrix::IntMatrix()
     //this->data = vec;
 }
 
-IntMatrix::IntMatrix(const IntMatrgitix &matrix)
+IntMatrix::IntMatrix(const IntMatrix &matrix)
 {
     rows = matrix.rows;
     cols = matrix.cols;

@@ -350,6 +350,14 @@ EncodedEvent EventEncoder::get_next_event()
 
     }
 
+    // check event matching
+    if (is_raw_present && is_hlt_present) {
+        if (encoded_event.get_event_id_raw() != encoded_event.get_event_id_hlt()) {
+            std::cout << "Error : event ids in raw and hlt files don't match" << std::endl;
+            exit(1);
+        }
+    }
+
     // now common (process hits)
     {
 
