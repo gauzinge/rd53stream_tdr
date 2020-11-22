@@ -78,9 +78,11 @@ class EncodedEvent
     void set_chip_clusters(std::map<ChipIdentifier, std::vector<SimpleCluster>> pChip_clusters) { chip_clusters = pChip_clusters; }
     void set_chip_matrices(std::map<ChipIdentifier, IntMatrix> pChip_matrices) { chip_matrices = pChip_matrices; chip_iterator = chip_matrices.begin(); }
     std::vector<uint16_t> get_stream(std::pair<ChipIdentifier, IntMatrix> chip);
+    std::vector<uint16_t> get_stream_by_id(ChipIdentifier identifier);
     std::pair<ChipIdentifier, std::vector<uint16_t>> get_next_chip();
     std::vector<std::pair<uint32_t,uint32_t>> get_chip_hits(ChipIdentifier identifier) { return chip_matrices[identifier].hits(); }
     uint32_t get_chip_nclusters(ChipIdentifier identifier) { return chip_clusters[identifier].size(); }
+    std::vector<SimpleCluster> get_chip_clusters(ChipIdentifier identifier) { return chip_clusters[identifier]; }
     std::string chip_str(ChipIdentifier identifier);
     void print ();
 

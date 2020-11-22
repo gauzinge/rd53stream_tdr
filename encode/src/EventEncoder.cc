@@ -63,6 +63,15 @@ std::vector<uint16_t> EncodedEvent::get_stream(std::pair<ChipIdentifier, IntMatr
 
 }
 
+std::vector<uint16_t> EncodedEvent::get_stream_by_id(ChipIdentifier identifier)
+{
+    // get mq54is
+    IntMatrix chip_matrix = chip_matrices[identifier];
+    // do
+    return get_stream(std::make_pair(identifier, chip_matrix));
+
+}
+
 std::string EncodedEvent::chip_str(ChipIdentifier identifier) {
     IntMatrix chip_matrix = chip_matrices[identifier];
     std::vector<uint16_t> stream = get_stream(std::make_pair(identifier, chip_matrix));

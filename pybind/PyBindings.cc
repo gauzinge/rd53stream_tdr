@@ -16,6 +16,10 @@ PYBIND11_MODULE(pybindings, m) {
         .def("load_file", &SimpleStreamDecoder::load_file)
         .def("decode", &SimpleStreamDecoder::decode);
 
+    py::class_<SimpleCluster>(m, "SimpleCluster")
+        .def(py::init<uint32_t, uint32_t, std::vector<int>>())
+        .def("get_hits", &SimpleCluster::GetHits);
+
     py::class_<ChipIdentifier>(m, "ChipIdentifier")
         .def(py::init<uint16_t, uint16_t, uint16_t, uint16_t>());
 
@@ -29,8 +33,9 @@ PYBIND11_MODULE(pybindings, m) {
         .def("chip_str", &EncodedEvent::chip_str)
         .def("print", &EncodedEvent::print)
         .def("get_next_chip", &EncodedEvent::get_next_chip)
-        .def("get_stream", &EncodedEvent::get_stream)
+        .def("get_stream_by_id", &EncodedEvent::get_stream_by_id)
         .def("get_chip_nclusters", &EncodedEvent::get_chip_nclusters)
+        .def("get_chip_clusters", &EncodedEvent::get_chip_clusters)
         .def("get_event_id", &EncodedEvent::get_event_id)
         .def("get_event_id_raw", &EncodedEvent::get_event_id_raw)
         .def("get_event_id_hlt", &EncodedEvent::get_event_id_hlt);
