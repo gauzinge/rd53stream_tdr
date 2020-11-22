@@ -14,7 +14,7 @@ class QCore
 {
 
   public:
-    QCore (int event_in, int module_in, int chip_in, uint32_t ccol_in, uint32_t qcrow_in, bool isneighbour_in, bool islast_in, std::vector<ADC> adcs_in);
+    QCore (int module_in, int chip_in, uint32_t ccol_in, uint32_t qcrow_in, bool isneighbour_in, bool islast_in, std::vector<ADC> adcs_in);
     std::vector<ADC> adcs;
     std::vector<bool> hitmap;
     std::vector<bool> encoded_hitmap;
@@ -25,7 +25,6 @@ class QCore
     //uint32_t core_row; //core row
     //uint32_t quarter_core_row;// quarter core row within the core, range 0 to 3
     //uint8_t qcrow; //encoded qcrow value: 6bits core_row + 2 bits quarter core in that core
-    int event;
     int module;
     int chip;
 

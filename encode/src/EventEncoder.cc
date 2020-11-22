@@ -27,13 +27,16 @@ EncodedEvent::EncodedEvent ()
 
 std::pair<ChipIdentifier, std::vector<uint16_t>> EncodedEvent::get_next_chip()
 {
+    std::pair<ChipIdentifier, IntMatrix> chip;
     std::pair<ChipIdentifier, std::vector<uint16_t>> ret;
-    if (streams_iterator != streams.end()) {
-        ret = *streams_iterator;
-        streams_iterator++;
-        IntMatrix chip_matrix = chip_matrices[ret.first];
-        if (chip_matrix.hits().size() > 0)
+    if (chip_iterator != chip_matrices.end()) {
+        chip = *chip_iterator;
+        chip_iterator++;
+        if (chip.second.hits().size() > 0) {
+            ret.first = chip.first;
+            ret.second = get_stream(chip);
             return ret;
+        }
         else
             return this->get_next_chip();
     } else {
@@ -42,9 +45,27 @@ std::pair<ChipIdentifier, std::vector<uint16_t>> EncodedEvent::get_next_chip()
     }
 }
 
+std::vector<uint16_t> EncodedEvent::get_stream(std::pair<ChipIdentifier, IntMatrix> chip)
+{
+    //let's use a seperate instance of the encoder for each event, just to be sure
+    Encoder enc;
+
+    //pick apart each chip int matrix in QCores
+    std::vector<QCore> qcores = enc.qcores (chip.second, chip.first.mmodule, chip.first.mchip);
+
+    //create the actual stream for this chip
+    std::stringstream ss;
+    std::vector<bool> tmp =  Serializer::serializeChip (qcores, event_id, chip.first.mchip, false, true, ss);
+    std::vector<uint16_t> binary_vec = Serializer::toVec<uint16_t> (tmp);
+
+    // return
+    return binary_vec;
+
+}
+
 std::string EncodedEvent::chip_str(ChipIdentifier identifier) {
-    std::vector<uint16_t> stream = streams[identifier];
     IntMatrix chip_matrix = chip_matrices[identifier];
+    std::vector<uint16_t> stream = get_stream(std::make_pair(identifier, chip_matrix));
     std::ostringstream out;
     out << "Disk: " << identifier.mdisk << ", Ring: " << identifier.mring << ", Module: " << identifier.mmodule << ", Chip: " << identifier.mchip << std::endl;
     out << "\tNumber of clusters: " << chip_clusters[identifier].size() << std::endl;
@@ -63,7 +84,7 @@ std::string EncodedEvent::chip_str(ChipIdentifier identifier) {
     out << std::endl;
     out << "\tQcores: " << std::endl;
     Encoder enc;
-    std::vector<QCore> qcores = enc.qcores (chip_matrix, 0, identifier.mmodule, identifier.mchip);
+    std::vector<QCore> qcores = enc.qcores (chip_matrix, identifier.mmodule, identifier.mchip);
     for(auto qcore : qcores) {
         out << "\t\tCol: " << qcore.ccol << ", Row: " << qcore.qcrow << ", islast: " << qcore.islast << ", isneighbour: " << qcore.isneighbour << std::endl;
         out << "\t\t";
@@ -81,8 +102,8 @@ std::string EncodedEvent::chip_str(ChipIdentifier identifier) {
 }
 
 void EncodedEvent::print() {
-    for(auto streams_item : streams) {
-        ChipIdentifier identifier = streams_item.first;
+    for(auto chip_item : chip_matrices) {
+        ChipIdentifier identifier = chip_item.first;
         std::cout << chip_str(identifier);
     }
 }
@@ -155,6 +176,7 @@ EncodedEvent EventEncoder::get_next_event()
     EncodedEvent encoded_event;
     encoded_event.set_raw_present(is_raw_present);
     encoded_event.set_hlt_present(is_hlt_present);
+    encoded_event.set_event_id(event_id);
 
     // check that we have some data
     bool raw_success = true;
@@ -172,12 +194,6 @@ EncodedEvent EventEncoder::get_next_event()
     // 2D matrices of pixel ADCs, key == chip identifier
     std::map<ChipIdentifier, IntMatrix> module_matrices;
     std::map<ChipIdentifier, IntMatrix> chip_matrices;
-
-    // QCore objects per module, key == chip identifier
-    std::map<ChipIdentifier, std::vector<QCore>> qcores;
-    std::map<ChipIdentifier, std::vector<uint16_t>> streams;
-    //let's use a seperate instance of the encoder for each event, just to be sure
-    Encoder enc;
 
     // !!! RAW DIGIS LOOP
     if (is_raw_present) {
@@ -336,8 +352,6 @@ EncodedEvent EventEncoder::get_next_event()
 
     // now common (process hits)
     {
-        //
-        std::cout << "!!! Starting stream encoding" << std::endl;
 
         //do all of the below only for the first event
         if (event_id == 0)
@@ -358,6 +372,9 @@ EncodedEvent EventEncoder::get_next_event()
             }
         }
 
+        //
+        std::cout << "!!! Starting module splitting" << std::endl;
+
         //now split the tmp_matrix  for each module in 4 chip matrices, construct the Chip identifier object and insert into the matrices map
         for (auto matrix : module_matrices)
         {
@@ -372,23 +389,6 @@ EncodedEvent EventEncoder::get_next_event()
 
         std::cout << "\tFinished picking apart modules; converted " << module_matrices.size() << " modules for TEPX to " << chip_matrices.size() << " chips" << std::endl;
 
-        for (auto chip : chip_matrices )
-        {
-            //pick apart each chip int matrix in QCores
-            std::vector<QCore> qcores = enc.qcores (chip.second, event_id, chip.first.mmodule, chip.first.mchip);
-
-            //create the actual stream for this chip
-            std::stringstream ss;
-            std::vector<bool> tmp =  Serializer::serializeChip (qcores, event_id, chip.first.mchip, false, true, ss);
-            std::vector<uint16_t> binary_vec = Serializer::toVec<uint16_t> (tmp);
-
-            // store in stream
-            ChipIdentifier chipId (chip.first.mdisk, chip.first.mring, chip.first.mmodule, chip.first.mchip);
-            streams.emplace (chipId, binary_vec);
-        }
-        encoded_event.set_streams(streams);
-
-        std::cout << "\tFinished encoding streams" << std::endl;
     }
 
     // increment

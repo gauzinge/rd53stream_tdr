@@ -37,7 +37,7 @@ int Encoder::find_last_qrow (IntMatrix& matrix, uint32_t ccol)
 /**
  * Build QCore objects from a pixel matrix
  */
-vector<QCore> Encoder::qcores (IntMatrix& matrix, int event, int module, int chip, std::ostream& stream)
+vector<QCore> Encoder::qcores (IntMatrix& matrix, int module, int chip, std::ostream& stream)
 {
     vector<QCore> qcores;
 
@@ -90,7 +90,7 @@ vector<QCore> Encoder::qcores (IntMatrix& matrix, int event, int module, int chi
             qcrow_prev = qcrow;
             bool islast = (qcrow == last_qcrow);
             //we increment the col by 1 as the valid address values for core_columns are 1 to 54
-            QCore qcore (event, module, chip, ccol + 1, qcrow, isneighbour, islast, qcore_adcs);
+            QCore qcore (module, chip, ccol + 1, qcrow, isneighbour, islast, qcore_adcs);
             qcores.push_back (qcore);
         }
     }

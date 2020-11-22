@@ -1,7 +1,6 @@
 #include <encode/interface/QCore.h>
 
-QCore::QCore (int event_in, int module_in, int chip_in, uint32_t ccol_in, uint32_t qcrow_in, bool isneighbour_in, bool islast_in, std::vector<ADC> adcs_in) :
-    event (event_in),
+QCore::QCore (int module_in, int chip_in, uint32_t ccol_in, uint32_t qcrow_in, bool isneighbour_in, bool islast_in, std::vector<ADC> adcs_in) :
     module (module_in),
     chip (chip_in),
     adcs (adcs_in),
