@@ -14,7 +14,6 @@ using namespace std;
 EncodedEvent::EncodedEvent ()
 {
     is_empty_var = false;
-    is_hlt_present_var = false;
 }
 
 /*EncodedEvent::EncodedEvent (const EncodedEvent &ev)
@@ -117,257 +116,128 @@ void EncodedEvent::print() {
     }
 }
 
-EventEncoder::EventEncoder (std::string pFilenameRaw, std::string pFilenameHlt)
+EventEncoder::EventEncoder (std::string pFilename)
 {
     // reset event id
     event_id = 0;
 
     // init files
-    this->init_files(pFilenameRaw, pFilenameHlt);
+    this->init_file(pFilename);
 
 }
 
-EventEncoder::EventEncoder (std::string pFilename, bool pInjectingRaw)
+void EventEncoder::init_file (std::string pFilename)
 {
-    // reset event id
-    event_id = 0;
+    // read file
+    file = new TFile (pFilename.c_str() );
+    reader= new TTreeReader ("BRIL_IT_Analysis/Digis", file);
+    trv_event_id= new TTreeReaderValue<uint32_t> (*reader, "event");
+    trv_side = new TTreeReaderValue<uint32_t> (*reader, "side");
+    trv_module = new TTreeReaderValue<uint32_t> (*reader, "module");
+    trv_ring = new TTreeReaderValue<uint32_t> (*reader, "ring");
+    trv_disk = new TTreeReaderValue<uint32_t> (*reader, "disk");
+    trv_adc = new TTreeReaderArray<uint32_t> (*reader, "adc");
+    trv_col = new TTreeReaderArray<uint32_t> (*reader, "column");
+    trv_row= new TTreeReaderArray<uint32_t> (*reader, "row");
+    trv_clusters = new TTreeReaderArray<std::vector<int>> (*reader, "clusters");
 
-    // init files
-    if (pInjectingRaw) this->init_files(pFilename, "none");
-    else this->init_files("none", pFilename);
-
-}
-
-void EventEncoder::init_files (std::string pFilenameRaw, std::string pFilenameHlt)
-{
-    // read raw file
-    if (pFilenameRaw.compare("none") != 0) is_raw_present = true;
-    else is_raw_present = false;
-    std::cout << "RAW present: " << is_raw_present << std::endl;
-    if (is_raw_present) {
-        file_raw = new TFile (pFilenameRaw.c_str() );
-        reader_raw = new TTreeReader ("BRIL_IT_Analysis/Digis", file_raw);
-        trv_event_id_raw = new TTreeReaderValue<uint32_t> (*reader_raw, "event");
-        trv_barrel_raw = new TTreeReaderArray<bool> (*reader_raw, "barrel");
-        trv_module_raw = new TTreeReaderArray<uint32_t> (*reader_raw, "module");
-        trv_ringlayer_raw = new TTreeReaderArray<uint32_t> (*reader_raw, "ringlayer");
-        trv_diskladder_raw = new TTreeReaderArray<uint32_t> (*reader_raw, "diskladder");
-        trv_adc_raw = new TTreeReaderArray<uint32_t> (*reader_raw, "adc");
-        trv_col_raw = new TTreeReaderArray<uint32_t> (*reader_raw, "column");
-        trv_row_raw = new TTreeReaderArray<uint32_t> (*reader_raw, "row");
-    }
-
-    // read hlt file
-    if (pFilenameHlt.compare("none") != 0) is_hlt_present = true;
-    else is_hlt_present = false;
-    std::cout << "HLT present: " << is_hlt_present << std::endl;
-    if (is_hlt_present) {
-        file_hlt = new TFile (pFilenameHlt.c_str() );
-        reader_hlt = new TTreeReader ("BRIL_IT_Analysis/Digis", file_hlt);
-        trv_event_id_hlt = new TTreeReaderValue<uint32_t> (*reader_hlt, "event");
-        trv_barrel_hlt = new TTreeReaderArray<bool> (*reader_hlt, "barrel");
-        trv_module_hlt = new TTreeReaderArray<uint32_t> (*reader_hlt, "module");
-        trv_ringlayer_hlt = new TTreeReaderArray<uint32_t> (*reader_hlt, "ringlayer");
-        trv_diskladder_hlt = new TTreeReaderArray<uint32_t> (*reader_hlt, "diskladder");
-        trv_clusters_hlt = new TTreeReaderArray<std::vector<int>> (*reader_hlt, "clusters");
-    }
-
-    // make sure
-    if(!is_raw_present && !is_hlt_present) {
-        std::cout<<"Error no raw or hlt files specified"<<std::endl;
-        exit(1);
-    }
 }
 
 EncodedEvent EventEncoder::get_next_event()
 {
     // create empty encoded event
     EncodedEvent encoded_event;
-    encoded_event.set_raw_present(is_raw_present);
-    encoded_event.set_hlt_present(is_hlt_present);
     encoded_event.set_event_id(event_id);
-
-    // check that we have some data
-    bool raw_success = true;
-    if (is_raw_present) raw_success = reader_raw->Next();
-    bool hlt_success = true;
-    if (is_hlt_present) hlt_success = reader_hlt->Next();
-
-    if (!(raw_success) || !(hlt_success) ) {
-        encoded_event.set_empty(true);
-        return encoded_event;
-    }
 
     // will be used in either case
     // Read all data for this event and construct
     // 2D matrices of pixel ADCs, key == chip identifier
     std::map<ChipIdentifier, IntMatrix> module_matrices;
     std::map<ChipIdentifier, IntMatrix> chip_matrices;
+    std::map<ChipIdentifier, std::vector<SimpleCluster>> module_clusters;
+    std::map<ChipIdentifier, std::vector<SimpleCluster>> chip_clusters;
 
-    // !!! RAW DIGIS LOOP
-    if (is_raw_present) {
-        //
-        std::cout << "!!! Starting Raw digis read loop" << std::endl;
-        //
-        encoded_event.set_event_id_raw(**trv_event_id_raw);
+    //
+    std::cout << "!!! Starting Raw digis read loop" << std::endl;
+    // !!! DATA READ LOOP
+    uint32_t module_counter = 0;
+    bool isDone = false;
+    while (true) {
 
-        // iteration
-        uint32_t ientry = 0;
+        // check that we have some data
+        bool raw_success = reader->Next();
+        if (!(raw_success)) {
+            if (module_counter == 0) encoded_event.set_empty(true);
+            break;
+        }
+        // check event id raw
+        //std::cout<< "Module counter: " << module_counter << ", Event id raw: " << encoded_event.get_event_id_raw() << ", From file: " << **trv_event_id << std::endl;
+        if (module_counter == 0) encoded_event.set_event_id_raw(**trv_event_id);
+        else if (encoded_event.get_event_id_raw() != **trv_event_id) { // || module_counter == 100) {
+            isDone = true;
+            reader->SetEntry(reader->GetCurrentEntry()-1);
+        }
+        module_counter++;
 
         // module loop within event
-        // this has one entry for each hit (row, col, adc) touple
-        for ( auto imod : *trv_module_raw)
+        uint32_t side = *trv_side->Get();
+        uint32_t disk = *trv_disk->Get();
+        uint32_t ring = *trv_ring->Get();
+        uint32_t module = *trv_module->Get();
+
+        /*if(side*disk != 9 || ring != 3 || module != 20) {
+            if (isDone) break;
+            else continue;
+        }
+        else std::cout << "Got it" << std::endl;*/
+
+        //generate a temporary chip identifier with fake chip id 99 since for the moment we just care for the module
+        ChipIdentifier tmp_id (disk*side, ring, module, 99);
+        //check if that module is already in our map
+        auto matrices_iterator = module_matrices.find (tmp_id);
+        if (matrices_iterator == std::end (module_matrices) ) // not found
         {
-            bool barrel = trv_barrel_raw->At (ientry);
-            uint32_t diskladder = trv_diskladder_raw->At (ientry);
-            uint32_t ringlayer = trv_ringlayer_raw->At (ientry);
-            uint32_t module = imod;
+            //insert an empty IntMatrix
+            IntMatrix tmp_matrix (nrows_module, ncols_module);
+            //module_matrices[tmp_id] = tmp_matrix;
+            module_matrices.emplace (tmp_id, tmp_matrix);
+        }
 
-            // if it's barrel or not barrel but disk < 9 (TFPX) increment ientry (consider next digi) and continue so only consider TEPX
-            if (barrel || (!barrel && diskladder < 9) )
-            {
-                ientry++;
-                continue;
-            }
-
-            //generate a temporary chip identifier with fake chip id 99 since for the moment we just care for the module
-            ChipIdentifier tmp_id (diskladder, ringlayer, module, 99);
-            //check if that module is already in our map
-            auto matrices_iterator = module_matrices.find (tmp_id);
-
-            if (matrices_iterator == std::end (module_matrices) ) // not found
-            {
-                //insert an empty IntMatrix
-                IntMatrix tmp_matrix (nrows_module, ncols_module);
-                //module_matrices[tmp_id] = tmp_matrix;
-                module_matrices.emplace (tmp_id, tmp_matrix);
-            }
-
-            //in all other cases the Intmatrix for that module exists already
-
+        //in all other cases the Intmatrix for that module exists already
+        uint32_t ientry = 0;
+        while (ientry < trv_row->GetSize()) {
             //get the row, col and ADC (attention, sensor row and column address) for the current module
-            uint32_t row = trv_row_raw->At (ientry);
-            uint32_t col = trv_col_raw->At (ientry);
-            uint32_t adc = trv_adc_raw->At (ientry);
+            uint32_t row = trv_row->At (ientry);
+            uint32_t col = trv_col->At (ientry);
+            uint32_t adc = trv_adc->At (ientry);
 
             //convert to module address (different row and column numbers because 50x50)
             //module_matrices.at (tmp_id).convertPitch_andFill (row, col, adc);
             module_matrices.at (tmp_id).fill (row, col, adc);
+            // increment
             ientry++;
-            //if(module_matrices.size() > 5) break;
-        }//end module loop
+        }
 
-        std::cout << "\t\tFinished reading raw data for event from the tree; found " << module_matrices.size() << " modules for TEPX" << std::endl;
-
-    }
-
-    // !!! HLT CLUSTER LOOP
-    if (is_hlt_present) {
-        // defining temp variables
-        std::map<ChipIdentifier, std::vector<SimpleCluster>> module_clusters;
-        std::map<ChipIdentifier, std::vector<SimpleCluster>> chip_clusters;
-
-        //
-        std::cout << "!!! Starting HLT cluster read loop" << std::endl;
-        //
-        encoded_event.set_event_id_hlt(**trv_event_id_hlt);
-
-        // iteration
-        uint32_t ientry = 0;
-
-        // module loop within event
-        // this has one entry for each hit (row, col, adc) touple
-        for ( auto imod : *trv_module_hlt)
-        {
-            bool barrel = trv_barrel_hlt->At (ientry);
-            uint32_t diskladder = trv_diskladder_hlt->At (ientry);
-            uint32_t ringlayer = trv_ringlayer_hlt->At (ientry);
-            uint32_t module = imod;
-
-            // if it's barrel or not barrel but disk < 9 (TFPX) increment ientry (consider next digi) and continue so only consider TEPX
-            if (barrel || (!barrel && diskladder < 9) )
-            {
-                ientry++;
-                continue;
-            }
-
-            //generate a temporary chip identifier with fake chip id 99 since for the moment we just care for the module
-            ChipIdentifier tmp_id (diskladder, ringlayer, module, 99);
-
-            //check if that module is already in our map
-            if (!is_raw_present) {
-                auto matrices_iterator = module_matrices.find (tmp_id);
-                if (matrices_iterator == std::end (module_matrices) ) // not found
-                {
-                    //insert an empty IntMatrix
-                    IntMatrix tmp_matrix (nrows_module, ncols_module);
-                    //module_matrices[tmp_id] = tmp_matrix;
-                    module_matrices.emplace (tmp_id, tmp_matrix);
-                }
-                //in all other cases the Intmatrix for that module exists already
-            }
-
-            //get the row, col and ADC (attention, sensor row and column address) for the current module
-            std::vector<int> hit_vec = trv_clusters_hlt->At(ientry);
+        // module clusters
+        ientry = 0;
+        while(ientry < trv_clusters->GetSize()) {
+            std::vector<int> cluster_hit_vec = trv_clusters->At(ientry);
             std::map<ChipIdentifier, std::vector<SimpleCluster>>::iterator it = module_clusters.find(tmp_id);
             if(it != module_clusters.end()) {
-                it->second.push_back(SimpleCluster(nrows_module,ncols_module,hit_vec));
+                it->second.push_back(SimpleCluster(nrows_module,ncols_module,cluster_hit_vec));
             } else {
                 std::vector<SimpleCluster> tmp;
-                tmp.push_back(SimpleCluster(nrows_module,ncols_module,hit_vec));
+                tmp.push_back(SimpleCluster(nrows_module,ncols_module,cluster_hit_vec));
                 module_clusters[tmp_id] = tmp;
             }
-            // in case still need to get raw hits
-            if (!is_raw_present) {
-                for(auto hit : hit_vec) {
-                    //get the row, col and ADC (attention, sensor row and column address) for the current module
-                    uint32_t row = (hit >> 16) & 0xffff;
-                    uint32_t col = (hit >> 0) & 0xffff;
-                    uint32_t adc = 1;
-
-                    //store
-                    module_matrices.at (tmp_id).fill (row, col, adc);
-                }
-            }
-
             ientry++;
-
-        }//end module loop
-
-        // now chip clusters
-        for (auto current_module : module_clusters)
-        {
-            std::vector<SimpleCluster> current_module_clusters = current_module.second;
-            for (auto module_cluster : current_module_clusters) {
-                std::map<int, SimpleCluster> clusters_per_chip = module_cluster.GetClustersPerChip();
-                for(auto cluster : clusters_per_chip) {
-                    ChipIdentifier chipId (current_module.first.mdisk, current_module.first.mring, current_module.first.mmodule, cluster.first);
-                    std::map<ChipIdentifier, std::vector<SimpleCluster>>::iterator it = chip_clusters.find(chipId);
-                    if(it != chip_clusters.end()) {
-                        it->second.push_back(cluster.second);
-                    } else {
-                        std::vector<SimpleCluster> tmp;
-                        tmp.push_back(cluster.second);
-                        chip_clusters[chipId] = tmp;
-                    }
-                }
-            }
         }
-        encoded_event.set_chip_clusters(chip_clusters);
 
-        std::cout << "\tFinished processing clusters" << std::endl;
-
+        if (isDone) break;
     }
+    std::cout << "\t\tFinished reading data for event from the tree; found " << module_matrices.size() << " modules for TEPX" << std::endl;
 
-    // check event matching
-    if (is_raw_present && is_hlt_present) {
-        if (encoded_event.get_event_id_raw() != encoded_event.get_event_id_hlt()) {
-            std::cout << "Error : event ids in raw and hlt files don't match" << std::endl;
-            exit(1);
-        }
-    }
-
-    // now common (process hits)
+    // now process
     {
 
         //do all of the below only for the first event
@@ -403,6 +273,27 @@ EncodedEvent EventEncoder::get_next_event()
             }
         }
         encoded_event.set_chip_matrices(chip_matrices);
+
+        // now chip clusters
+        for (auto current_module : module_clusters)
+        {
+            std::vector<SimpleCluster> current_module_clusters = current_module.second;
+            for (auto module_cluster : current_module_clusters) {
+                std::map<int, SimpleCluster> clusters_per_chip = module_cluster.GetClustersPerChip();
+                for(auto cluster : clusters_per_chip) {
+                    ChipIdentifier chipId (current_module.first.mdisk, current_module.first.mring, current_module.first.mmodule, cluster.first);
+                    std::map<ChipIdentifier, std::vector<SimpleCluster>>::iterator it = chip_clusters.find(chipId);
+                    if(it != chip_clusters.end()) {
+                        it->second.push_back(cluster.second);
+                    } else {
+                        std::vector<SimpleCluster> tmp;
+                        tmp.push_back(cluster.second);
+                        chip_clusters[chipId] = tmp;
+                    }
+                }
+            }
+        }
+        encoded_event.set_chip_clusters(chip_clusters);
 
         std::cout << "\tFinished picking apart modules; converted " << module_matrices.size() << " modules for TEPX to " << chip_matrices.size() << " chips" << std::endl;
 

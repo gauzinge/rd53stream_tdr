@@ -71,10 +71,6 @@ class EncodedEvent
     //EncodedEvent (const EncodedEvent &ev);
     void set_empty(bool pValue) { is_empty_var = pValue; }
     bool is_empty() { return is_empty_var; }
-    void set_raw_present(bool pValue) { is_raw_present_var = pValue; }
-    bool is_raw_present() { return is_raw_present_var; }
-    void set_hlt_present(bool pValue) { is_hlt_present_var = pValue; }
-    bool is_hlt_present() { return is_hlt_present_var; }
     void set_chip_clusters(std::map<ChipIdentifier, std::vector<SimpleCluster>> pChip_clusters) { chip_clusters = pChip_clusters; }
     void set_chip_matrices(std::map<ChipIdentifier, IntMatrix> pChip_matrices) { chip_matrices = pChip_matrices; chip_iterator = chip_matrices.begin(); }
     std::vector<uint16_t> get_stream(std::pair<ChipIdentifier, IntMatrix> chip);
@@ -91,16 +87,11 @@ class EncodedEvent
     uint32_t get_event_id() { return event_id; }
     void set_event_id_raw(uint32_t value) { event_id_raw = value; }
     uint32_t get_event_id_raw() { return event_id_raw; }
-    void set_event_id_hlt(uint32_t value) { event_id_hlt = value; }
-    uint32_t get_event_id_hlt() { return event_id_hlt; }
 
   private:
     bool is_empty_var;
-    bool is_raw_present_var;
-    bool is_hlt_present_var;
     uint32_t event_id;
     uint32_t event_id_raw;
-    uint32_t event_id_hlt;
     std::map<ChipIdentifier, std::vector<SimpleCluster>> chip_clusters;
     std::map<ChipIdentifier, IntMatrix> chip_matrices;
     std::map<ChipIdentifier, IntMatrix>::iterator chip_iterator;
@@ -114,34 +105,25 @@ class EventEncoder
 {
 
   public:
-    EventEncoder (std::string pFilenameRaw, std::string pFilenameHlt);
-    EventEncoder (std::string pFilename, bool pInjectingRaw);
-    void init_files(std::string pFilenameRaw, std::string pFilenameHlt);
+    EventEncoder (std::string pFilename);
+    void init_file(std::string pFilename);
     EncodedEvent get_next_event();
 
   private:
-    // digis file
-    bool is_raw_present;
-    TFile* file_raw;
-    TTreeReader* reader_raw;
-    TTreeReaderValue<uint32_t>* trv_event_id_raw;
-    TTreeReaderArray<bool>* trv_barrel_raw;
-    TTreeReaderArray<uint32_t>* trv_module_raw;
-    TTreeReaderArray<uint32_t>* trv_ringlayer_raw;
-    TTreeReaderArray<uint32_t>* trv_diskladder_raw;
-    TTreeReaderArray<uint32_t>* trv_adc_raw;
-    TTreeReaderArray<uint32_t>* trv_col_raw;
-    TTreeReaderArray<uint32_t>* trv_row_raw;
-    // hlt file
-    bool is_hlt_present;
-    TFile* file_hlt;
-    TTreeReader* reader_hlt;
-    TTreeReaderValue<uint32_t>* trv_event_id_hlt;
-    TTreeReaderArray<bool>* trv_barrel_hlt;
-    TTreeReaderArray<uint32_t>* trv_module_hlt;
-    TTreeReaderArray<uint32_t>* trv_ringlayer_hlt;
-    TTreeReaderArray<uint32_t>* trv_diskladder_hlt;
-    TTreeReaderArray<std::vector<int>>* trv_clusters_hlt;
+
+    // common file file
+    TFile* file;
+    TTreeReader* reader;
+    TTreeReaderValue<uint32_t>* trv_event_id;
+    TTreeReaderValue<uint32_t>* trv_side;
+    TTreeReaderValue<uint32_t>* trv_module;
+    TTreeReaderValue<uint32_t>* trv_ring;
+    TTreeReaderValue<uint32_t>* trv_disk;
+    TTreeReaderArray<uint32_t>* trv_adc;
+    TTreeReaderArray<uint32_t>* trv_col;
+    TTreeReaderArray<uint32_t>* trv_row;
+    TTreeReaderArray<std::vector<int>>* trv_clusters;
+
     // common
     const uint32_t nrows_module = 1344;
     const uint32_t ncols_module = 432;

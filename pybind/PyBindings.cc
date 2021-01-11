@@ -27,8 +27,6 @@ PYBIND11_MODULE(pybindings, m) {
         .def(py::init())
         .def(py::init<const EncodedEvent &>())
         .def("is_empty", &EncodedEvent::is_empty)
-        .def("is_hlt_present", &EncodedEvent::is_hlt_present)
-        .def("is_raw_present", &EncodedEvent::is_raw_present)
         .def("get_chip_hits", &EncodedEvent::get_chip_hits)
         .def("chip_str", &EncodedEvent::chip_str)
         .def("print", &EncodedEvent::print)
@@ -37,12 +35,10 @@ PYBIND11_MODULE(pybindings, m) {
         .def("get_chip_nclusters", &EncodedEvent::get_chip_nclusters)
         .def("get_chip_clusters", &EncodedEvent::get_chip_clusters)
         .def("get_event_id", &EncodedEvent::get_event_id)
-        .def("get_event_id_raw", &EncodedEvent::get_event_id_raw)
-        .def("get_event_id_hlt", &EncodedEvent::get_event_id_hlt);
+        .def("get_event_id_raw", &EncodedEvent::get_event_id_raw);
 
     py::class_<EventEncoder>(m, "EventEncoder")
-        .def(py::init<std::string, std::string>())
-        .def(py::init<std::string, bool>())
+        .def(py::init<std::string>())
         .def("get_next_event", &EventEncoder::get_next_event);
 
 }
