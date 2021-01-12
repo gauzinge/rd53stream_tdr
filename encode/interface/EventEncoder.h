@@ -107,6 +107,7 @@ class EventEncoder
   public:
     EventEncoder (std::string pFilename);
     void init_file(std::string pFilename);
+    void skip_events(uint32_t pN);
     EncodedEvent get_next_event();
 
   private:

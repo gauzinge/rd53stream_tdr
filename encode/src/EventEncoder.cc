@@ -143,6 +143,10 @@ void EventEncoder::init_file (std::string pFilename)
 
 }
 
+void EventEncoder::skip_events(uint32_t pN) {
+    for (uint32_t i = 0; i < pN; i++) reader->Next();
+}
+
 EncodedEvent EventEncoder::get_next_event()
 {
     // create empty encoded event

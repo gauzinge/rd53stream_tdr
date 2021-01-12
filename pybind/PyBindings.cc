@@ -39,6 +39,7 @@ PYBIND11_MODULE(pybindings, m) {
 
     py::class_<EventEncoder>(m, "EventEncoder")
         .def(py::init<std::string>())
-        .def("get_next_event", &EventEncoder::get_next_event);
+        .def("get_next_event", &EventEncoder::get_next_event)
+        .def("skip_events", &EventEncoder::skip_events);
 
 }
