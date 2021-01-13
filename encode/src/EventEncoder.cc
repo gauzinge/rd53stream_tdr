@@ -196,18 +196,33 @@ EncodedEvent EventEncoder::get_next_event()
         else std::cout << "Got it" << std::endl;*/
 
         //generate a temporary chip identifier with fake chip id 99 since for the moment we just care for the module
-        ChipIdentifier tmp_id (side, disk, ring, module, 99);
-        //check if that module is already in our map
-        auto matrices_iterator = module_matrices.find (tmp_id);
+        ChipIdentifier tmp_id_module(side, disk, ring, module, 99);
+        auto matrices_iterator = module_matrices.find (tmp_id_module);
         if (matrices_iterator == std::end (module_matrices) ) // not found
         {
             //insert an empty IntMatrix
             IntMatrix tmp_matrix (nrows_module, ncols_module);
             //module_matrices[tmp_id] = tmp_matrix;
-            module_matrices.emplace (tmp_id, tmp_matrix);
+            module_matrices.emplace (tmp_id_module, tmp_matrix);
         } else {
             std::cout << "Warning! Module already exists! " << std::endl;
-            tmp_id.print();
+            tmp_id_module.print();
+        }
+
+        ChipIdentifier tmp_id_chip[4];
+        for(uint32_t chip_id = 0; chip_id < 4; chip_id++) {
+            tmp_id_chip[chip_id] = ChipIdentifier(side, disk, ring, module, chip_id);
+            //check if that module is already in our map
+            auto matrices_iterator = chip_matrices.find (tmp_id_chip[chip_id]);
+            if (matrices_iterator == std::end (chip_matrices) ) // not found
+            {
+                //insert an empty IntMatrix
+                IntMatrix tmp_matrix (nrows_module/2, ncols_module/2);
+                chip_matrices.emplace (tmp_id_chip[chip_id], tmp_matrix);
+            } else {
+                std::cout << "Warning! Chip already exists! " << std::endl;
+                tmp_id_chip[chip_id].print();
+            }
         }
 
         //in all other cases the Intmatrix for that module exists already
@@ -218,9 +233,35 @@ EncodedEvent EventEncoder::get_next_event()
             uint32_t col = trv_col->At (ientry);
             uint32_t adc = trv_adc->At (ientry);
 
-            //convert to module address (different row and column numbers because 50x50)
-            //module_matrices.at (tmp_id).convertPitch_andFill (row, col, adc);
-            module_matrices.at (tmp_id).fill (row, col, adc);
+            uint32_t chip_id = 0;
+            uint32_t row_offset = 0;
+            uint32_t col_offset = 0;
+            if (row < nrows_module/2 && col < ncols_module/2) {
+                chip_id = 0;
+                row_offset = 0;
+                col_offset = 0;
+            }
+            else if (row < nrows_module/2 && col >= ncols_module/2 && col < ncols_module) {
+                chip_id = 1;
+                row_offset = 0;
+                col_offset = ncols_module/2;
+            }
+            else if (row >= nrows_module/2 && row < nrows_module && col < ncols_module/2) {
+                chip_id = 2;
+                row_offset = nrows_module/2;
+                col_offset = 0;
+            }
+            else if (row >= nrows_module/2 && row < nrows_module && col >= ncols_module/2 && col < ncols_module) {
+                chip_id = 3;
+                row_offset = nrows_module/2;
+                col_offset = ncols_module/2;
+            }
+            else chip_id = 4;
+
+            // append
+            module_matrices.at (tmp_id_module).fill (row, col, adc);
+            if(chip_id < 4) chip_matrices.at (tmp_id_chip[chip_id]).fill (row-row_offset, col-col_offset, adc);
+
             // increment
             ientry++;
         }
@@ -229,19 +270,20 @@ EncodedEvent EventEncoder::get_next_event()
         ientry = 0;
         while(ientry < trv_clusters->GetSize()) {
             std::vector<int> cluster_hit_vec = trv_clusters->At(ientry);
-            std::map<ChipIdentifier, std::vector<SimpleCluster>>::iterator it = module_clusters.find(tmp_id);
+            std::map<ChipIdentifier, std::vector<SimpleCluster>>::iterator it = module_clusters.find(tmp_id_module);
             if(it != module_clusters.end()) {
                 it->second.push_back(SimpleCluster(nrows_module,ncols_module,cluster_hit_vec));
             } else {
                 std::vector<SimpleCluster> tmp;
                 tmp.push_back(SimpleCluster(nrows_module,ncols_module,cluster_hit_vec));
-                module_clusters[tmp_id] = tmp;
+                module_clusters[tmp_id_module] = tmp;
             }
             ientry++;
         }
 
         if (isDone) break;
     }
+    encoded_event.set_chip_matrices(chip_matrices);
     std::cout << "\t\tFinished reading data for event from the tree; found " << module_matrices.size() << " modules for TEPX" << std::endl;
 
     // now process
@@ -270,7 +312,7 @@ EncodedEvent EventEncoder::get_next_event()
         std::cout << "!!! Starting module splitting" << std::endl;
 
         //now split the tmp_matrix  for each module in 4 chip matrices, construct the Chip identifier object and insert into the matrices map
-        for (auto matrix : module_matrices)
+        /*for (auto matrix : module_matrices)
         {
             for (uint32_t chip = 0; chip < 4; chip++)
             {
@@ -279,7 +321,7 @@ EncodedEvent EventEncoder::get_next_event()
                 if ( tmp_matrix.hits().size() > 0 ) chip_matrices.emplace (chipId, tmp_matrix);
             }
         }
-        encoded_event.set_chip_matrices(chip_matrices);
+        encoded_event.set_chip_matrices(chip_matrices);*/
 
         // now chip clusters
         for (auto current_module : module_clusters)
