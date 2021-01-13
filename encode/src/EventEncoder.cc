@@ -160,6 +160,7 @@ EncodedEvent EventEncoder::get_next_event()
     std::map<ChipIdentifier, IntMatrix> chip_matrices;
     std::map<ChipIdentifier, std::vector<SimpleCluster>> module_clusters;
     std::map<ChipIdentifier, std::vector<SimpleCluster>> chip_clusters;
+    std::map<ChipIdentifier, bool> chip_was_split;
 
     //
     std::cout << "!!! Starting Raw digis read loop" << std::endl;
@@ -320,18 +321,21 @@ EncodedEvent EventEncoder::get_next_event()
             std::vector<SimpleCluster> current_module_clusters = current_module.second;
             for (auto module_cluster : current_module_clusters) {
                 std::map<int, std::vector<SimpleCluster>> clusters_per_chip = module_cluster.GetClustersPerChip();
-                for(auto cluster : clusters_per_chip) {
-                    ChipIdentifier chipId (current_module.first.mside, current_module.first.mdisk, current_module.first.mring, current_module.first.mmodule, cluster.first);
+                for(auto clusters : clusters_per_chip) {
+                    ChipIdentifier chipId (current_module.first.mside, current_module.first.mdisk, current_module.first.mring, current_module.first.mmodule, clusters.first);
                     std::map<ChipIdentifier, std::vector<SimpleCluster>>::iterator it = chip_clusters.find(chipId);
                     if(it != chip_clusters.end()) {
-                        it->second.insert(it->second.end(), cluster.second.begin(), cluster.second.end());
+                        if (clusters.second.size() > 1) chip_was_split[chipId] = true; // if already exists set only true
+                        it->second.insert(it->second.end(), clusters.second.begin(), clusters.second.end());
                     } else {
-                        chip_clusters[chipId] = cluster.second;
+                        chip_was_split[chipId] = (clusters.second.size() > 1);
+                        chip_clusters[chipId] = clusters.second;
                     }
                 }
             }
         }
         encoded_event.set_chip_clusters(chip_clusters);
+        encoded_event.set_chip_split(chip_was_split);
 
         std::cout << "\tFinished picking apart modules; converted " << module_matrices.size() << " modules for TEPX to " << chip_matrices.size() << " chips" << std::endl;
 

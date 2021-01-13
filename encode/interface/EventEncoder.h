@@ -87,7 +87,7 @@ class SimpleCluster
                 } // done iterating hits
 
                 // print warning
-                if (hits_vec_split.size() > 1) std::cout << "!!! Warning : border cluster was split" << std::endl;
+                if (hits_vec_split.size() > 1) std::cout << "\t\t\t!!! Warning : border cluster was split" << std::endl;
 
                 // cluster vector
                 std::vector<SimpleCluster> temp_clu_vec;
@@ -117,6 +117,7 @@ class EncodedEvent
     void set_empty(bool pValue) { is_empty_var = pValue; }
     bool is_empty() { return is_empty_var; }
     void set_chip_clusters(std::map<ChipIdentifier, std::vector<SimpleCluster>> pChip_clusters) { chip_clusters = pChip_clusters; }
+    void set_chip_split(std::map<ChipIdentifier, bool> pWasSplit) { chip_was_split = pWasSplit; }
     void set_chip_matrices(std::map<ChipIdentifier, IntMatrix> pChip_matrices) { chip_matrices = pChip_matrices; chip_iterator = chip_matrices.begin(); }
     std::vector<uint16_t> get_stream(std::pair<ChipIdentifier, IntMatrix> chip);
     std::vector<uint16_t> get_stream_by_id(ChipIdentifier identifier);
@@ -124,6 +125,7 @@ class EncodedEvent
     std::vector<std::pair<uint32_t,uint32_t>> get_chip_hits(ChipIdentifier identifier) { return chip_matrices[identifier].hits(); }
     uint32_t get_chip_nclusters(ChipIdentifier identifier) { return chip_clusters[identifier].size(); }
     std::vector<SimpleCluster> get_chip_clusters(ChipIdentifier identifier) { return chip_clusters[identifier]; }
+    bool get_chip_was_split(ChipIdentifier identifier) { return chip_was_split[identifier]; }
     std::string chip_str(ChipIdentifier identifier);
     void print ();
 
@@ -138,6 +140,7 @@ class EncodedEvent
     uint32_t event_id;
     uint32_t event_id_raw;
     std::map<ChipIdentifier, std::vector<SimpleCluster>> chip_clusters;
+    std::map<ChipIdentifier, bool> chip_was_split;
     std::map<ChipIdentifier, IntMatrix> chip_matrices;
     std::map<ChipIdentifier, IntMatrix>::iterator chip_iterator;
 

@@ -34,6 +34,7 @@ PYBIND11_MODULE(pybindings, m) {
         .def("get_stream_by_id", &EncodedEvent::get_stream_by_id)
         .def("get_chip_nclusters", &EncodedEvent::get_chip_nclusters)
         .def("get_chip_clusters", &EncodedEvent::get_chip_clusters)
+        .def("get_chip_was_split", &EncodedEvent::get_chip_was_split)
         .def("get_event_id", &EncodedEvent::get_event_id)
         .def("get_event_id_raw", &EncodedEvent::get_event_id_raw);
 
