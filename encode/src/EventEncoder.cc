@@ -75,7 +75,7 @@ std::string EncodedEvent::chip_str(ChipIdentifier identifier) {
     IntMatrix chip_matrix = chip_matrices[identifier];
     std::vector<uint16_t> stream = get_stream(std::make_pair(identifier, chip_matrix));
     std::ostringstream out;
-    out << "Disk: " << identifier.mdisk << ", Ring: " << identifier.mring << ", Module: " << identifier.mmodule << ", Chip: " << identifier.mchip << std::endl;
+    out << "Side: " << identifier.mside << ", Disk: " << identifier.mdisk << ", Ring: " << identifier.mring << ", Module: " << identifier.mmodule << ", Chip: " << identifier.mchip << std::endl;
     out << "\tNumber of clusters: " << chip_clusters[identifier].size() << std::endl;
     int cluster_id = 0;
     for (auto cluster : chip_clusters[identifier]) {
@@ -196,7 +196,7 @@ EncodedEvent EventEncoder::get_next_event()
         else std::cout << "Got it" << std::endl;*/
 
         //generate a temporary chip identifier with fake chip id 99 since for the moment we just care for the module
-        ChipIdentifier tmp_id (disk*side, ring, module, 99);
+        ChipIdentifier tmp_id (side, disk, ring, module, 99);
         //check if that module is already in our map
         auto matrices_iterator = module_matrices.find (tmp_id);
         if (matrices_iterator == std::end (module_matrices) ) // not found
@@ -205,6 +205,9 @@ EncodedEvent EventEncoder::get_next_event()
             IntMatrix tmp_matrix (nrows_module, ncols_module);
             //module_matrices[tmp_id] = tmp_matrix;
             module_matrices.emplace (tmp_id, tmp_matrix);
+        } else {
+            std::cout << "Warning! Module already exists! " << std::endl;
+            tmp_id.print();
         }
 
         //in all other cases the Intmatrix for that module exists already
@@ -271,7 +274,7 @@ EncodedEvent EventEncoder::get_next_event()
         {
             for (uint32_t chip = 0; chip < 4; chip++)
             {
-                ChipIdentifier chipId (matrix.first.mdisk, matrix.first.mring, matrix.first.mmodule, chip);
+                ChipIdentifier chipId (matrix.first.mside, matrix.first.mdisk, matrix.first.mring, matrix.first.mmodule, chip);
                 IntMatrix tmp_matrix = matrix.second.submatrix (chip);
                 if ( tmp_matrix.hits().size() > 0 ) chip_matrices.emplace (chipId, tmp_matrix);
             }
@@ -285,7 +288,7 @@ EncodedEvent EventEncoder::get_next_event()
             for (auto module_cluster : current_module_clusters) {
                 std::map<int, SimpleCluster> clusters_per_chip = module_cluster.GetClustersPerChip();
                 for(auto cluster : clusters_per_chip) {
-                    ChipIdentifier chipId (current_module.first.mdisk, current_module.first.mring, current_module.first.mmodule, cluster.first);
+                    ChipIdentifier chipId (current_module.first.mside, current_module.first.mdisk, current_module.first.mring, current_module.first.mmodule, cluster.first);
                     std::map<ChipIdentifier, std::vector<SimpleCluster>>::iterator it = chip_clusters.find(chipId);
                     if(it != chip_clusters.end()) {
                         it->second.push_back(cluster.second);

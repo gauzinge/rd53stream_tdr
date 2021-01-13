@@ -7,13 +7,15 @@ class ChipIdentifier
 {
   public:
     ChipIdentifier () :
+        mside (99),
         mdisk (99),
         mring (99),
         mmodule (99),
         mchip (99)
     {;}
 
-    ChipIdentifier (uint32_t disk, uint32_t ring, uint32_t module, uint32_t chip) :
+    ChipIdentifier (uint32_t side, uint32_t disk, uint32_t ring, uint32_t module, uint32_t chip) :
+        mside (side),
         mdisk (disk),
         mring (ring),
         mmodule (module),
@@ -89,6 +91,7 @@ class ChipIdentifier
 
     // copy constructur
     ChipIdentifier (const ChipIdentifier &identifier) {
+        mside = identifier.mside;
         mdisk = identifier.mdisk;
         mring = identifier.mring;
         mmodule = identifier.mmodule;
@@ -100,7 +103,7 @@ class ChipIdentifier
 
     void print() const
     {
-        std::cout << "D " << mdisk << " R " << mring << " M " << mmodule <<   " Q " << mquarter << " DTC " << mdtc << " C " << mchip << " ; " << mlinkfactor << std::endl;
+        std::cout << "S " << mside << " D " << mdisk << " R " << mring << " M " << mmodule <<   " Q " << mquarter << " DTC " << mdtc << " C " << mchip << " ; " << mlinkfactor << std::endl;
     }
 
     //encode the disk, ring, module, # of chips in a word of type T
@@ -129,6 +132,7 @@ class ChipIdentifier
     }
 
     //protected:
+    uint32_t mside;
     uint32_t mdisk;
     uint32_t mring;
     uint32_t mmodule;
@@ -143,7 +147,8 @@ class ChipIdentifier
 
 inline bool operator < (const ChipIdentifier& obj1, const ChipIdentifier& obj2)
 {
-    if (obj1.mdisk != obj2.mdisk) return obj1.mdisk < obj2.mdisk;
+    if (obj1.mside != obj2.mside) return obj1.mside < obj2.mside;
+    else if (obj1.mdisk != obj2.mdisk) return obj1.mdisk < obj2.mdisk;
     else if (obj1.mring != obj2.mring) return obj1.mring < obj2.mring;
     else if (obj1.mmodule != obj2.mmodule) return obj1.mmodule < obj2.mmodule;
     else return obj1.mchip < obj2.mchip;

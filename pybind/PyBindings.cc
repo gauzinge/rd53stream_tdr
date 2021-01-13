@@ -21,7 +21,7 @@ PYBIND11_MODULE(pybindings, m) {
         .def("get_hits", &SimpleCluster::GetHits);
 
     py::class_<ChipIdentifier>(m, "ChipIdentifier")
-        .def(py::init<uint16_t, uint16_t, uint16_t, uint16_t>());
+        .def(py::init<uint16_t, uint16_t, uint16_t, uint16_t, uint16_t>());
 
     py::class_<EncodedEvent>(m, "EncodedEvent")
         .def(py::init())

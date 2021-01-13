@@ -152,7 +152,7 @@ class DecoderBase
                 uint32_t ring = (moduleword >> 9) & 0x7;
                 uint32_t disk = (moduleword >> 12) & 0xF;
 
-                ChipIdentifier chip (disk, ring, module, chipid);
+                ChipIdentifier chip (1, disk, ring, module, chipid);
                 stream << "###############################################################" << std::endl;
                 chip.print();
                 stream << "This chip has " << nwords << " words of " << sizeof (T) * 8 << " bits which corresponds to " << nwords * 8 * sizeof (T) / 64 << " 64 bit words" << std::endl;
