@@ -38,9 +38,9 @@ class SimpleCluster
             }
             return hits_per_chip;
         }
-        std::map<int, SimpleCluster> GetClustersPerChip() {
+        std::map<int, std::vector<SimpleCluster>> GetClustersPerChip() {
             std::map<int, std::vector<int>> hits_per_chip = this->GetHitsPerChip();
-            std::map<int, SimpleCluster> clusters_per_chip;
+            std::map<int, std::vector<SimpleCluster>> clusters_per_chip;
             //std::cout<< "Debug:\n";
             //std::cout << "\tAll hits: ";
             //for(auto hit : hits) std::cout << "(col " << ((hit >> 0) & 0xffff) << ", row " << ((hit >> 16) & 0xffff) << ") ";
@@ -49,7 +49,52 @@ class SimpleCluster
                 //std::cout<< "\tChip: " << hits_vec.first << ", Hits: ";
                 //for(auto hit : hits_vec.second) std::cout << "(col " << ((hit >> 0) & 0xffff) << ", row " << ((hit >> 16) & 0xffff) << ") ";
                 //std::cout << std::endl;
-                clusters_per_chip.emplace(hits_vec.first, SimpleCluster(this->nrows/2, this->ncols/2, hits_vec.second));
+                // split clusters
+                std::vector<std::vector<int>> hits_vec_split;
+                std::vector<int> cluster0;
+                hits_vec_split.push_back(cluster0);
+                for (auto hit0 : hits_vec.second) {
+                    //
+                    uint32_t hit0_row = (hit0 >> 16) & 0xffff;
+                    uint32_t hit0_col = (hit0 >> 0) & 0xffff;
+
+                    for(uint32_t cluster_id = 0; cluster_id < hits_vec_split.size(); cluster_id++) {
+                        if(hits_vec_split[cluster_id].size() == 0) {
+                            hits_vec_split[cluster_id].push_back(hit0);
+                            break;
+                        } else {
+                            bool isMerged = false;
+                            for(auto hit1 : hits_vec_split[cluster_id]) {
+                                //
+                                uint32_t hit1_row = (hit1 >> 16) & 0xffff;
+                                uint32_t hit1_col = (hit1 >> 0) & 0xffff;
+                                // check
+                                if ((hit1_row-hit0_row)*(hit1_row-hit0_row) <= 1 && (hit1_col-hit0_col)*(hit1_col-hit0_col) <= 1) {
+                                    isMerged = true;
+                                    hits_vec_split[cluster_id].push_back(hit0);
+                                    break;
+                                }
+                            }
+                            // if found (go for next)
+                            if (isMerged) break;
+                            else if (cluster_id == hits_vec_split.size()-1) {
+                                // create new cluster
+                                std::vector<int> new_cluster;
+                                hits_vec_split.push_back(new_cluster);
+                            }
+                        }
+                    }
+                } // done iterating hits
+
+                // print warning
+                if (hits_vec_split.size() > 1) std::cout << "!!! Warning : border cluster was split" << std::endl;
+
+                // cluster vector
+                std::vector<SimpleCluster> temp_clu_vec;
+                for(auto hits_vec_temp : hits_vec_split) temp_clu_vec.push_back(SimpleCluster(this->nrows/2, this->ncols/2, hits_vec_temp));
+
+                // emplace resulting clusters
+                clusters_per_chip.emplace(hits_vec.first, temp_clu_vec);
             }
             return clusters_per_chip;
         }

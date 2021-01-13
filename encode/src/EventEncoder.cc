@@ -319,16 +319,14 @@ EncodedEvent EventEncoder::get_next_event()
         {
             std::vector<SimpleCluster> current_module_clusters = current_module.second;
             for (auto module_cluster : current_module_clusters) {
-                std::map<int, SimpleCluster> clusters_per_chip = module_cluster.GetClustersPerChip();
+                std::map<int, std::vector<SimpleCluster>> clusters_per_chip = module_cluster.GetClustersPerChip();
                 for(auto cluster : clusters_per_chip) {
                     ChipIdentifier chipId (current_module.first.mside, current_module.first.mdisk, current_module.first.mring, current_module.first.mmodule, cluster.first);
                     std::map<ChipIdentifier, std::vector<SimpleCluster>>::iterator it = chip_clusters.find(chipId);
                     if(it != chip_clusters.end()) {
-                        it->second.push_back(cluster.second);
+                        it->second.insert(it->second.end(), cluster.second.begin(), cluster.second.end());
                     } else {
-                        std::vector<SimpleCluster> tmp;
-                        tmp.push_back(cluster.second);
-                        chip_clusters[chipId] = tmp;
+                        chip_clusters[chipId] = cluster.second;
                     }
                 }
             }
