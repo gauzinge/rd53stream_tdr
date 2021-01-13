@@ -234,33 +234,24 @@ EncodedEvent EventEncoder::get_next_event()
             uint32_t adc = trv_adc->At (ientry);
 
             uint32_t chip_id = 0;
-            uint32_t row_offset = 0;
-            uint32_t col_offset = 0;
-            if (row < nrows_module/2 && col < ncols_module/2) {
-                chip_id = 0;
-                row_offset = 0;
-                col_offset = 0;
-            }
-            else if (row < nrows_module/2 && col >= ncols_module/2 && col < ncols_module) {
-                chip_id = 1;
-                row_offset = 0;
-                col_offset = ncols_module/2;
-            }
-            else if (row >= nrows_module/2 && row < nrows_module && col < ncols_module/2) {
-                chip_id = 2;
-                row_offset = nrows_module/2;
-                col_offset = 0;
-            }
-            else if (row >= nrows_module/2 && row < nrows_module && col >= ncols_module/2 && col < ncols_module) {
-                chip_id = 3;
-                row_offset = nrows_module/2;
-                col_offset = ncols_module/2;
-            }
-            else chip_id = 4;
+            if (row < nrows_module/2) {
+                if (col < ncols_module/2) {
+                    chip_id = 0;
+                } else if (col >= ncols_module/2 && col < ncols_module) {
+                    chip_id = 1;
+                } else chip_id = 4;
+            } else if (row >= nrows_module/2 && row < nrows_module) {
+                if (col < ncols_module/2) {
+                    chip_id = 2;
+                }
+                else if (col >= ncols_module/2 && col < ncols_module) {
+                    chip_id = 3;
+                } else chip_id = 4;
+            } else chip_id = 5;
 
             // append
             module_matrices.at (tmp_id_module).fill (row, col, adc);
-            if(chip_id < 4) chip_matrices.at (tmp_id_chip[chip_id]).fill (row-row_offset, col-col_offset, adc);
+            if(chip_id < 4) chip_matrices.at (tmp_id_chip[chip_id]).fill (row % (nrows_module/2), col % (ncols_module/2), adc);
 
             // increment
             ientry++;
