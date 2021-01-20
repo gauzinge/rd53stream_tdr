@@ -107,7 +107,8 @@ std::vector<std::pair<uint32_t,uint32_t>> IntMatrix::hits()
     for(int col = 0; col < this->cols; col++) {
         for(int row = 0; row < this->rows; row++) {
             ADC adc_val = this->data.at(row).at(col);
-            if (adc_val) result.push_back(std::make_pair(col,row));
+            uint32_t encoded_address = ((col & 0xffff) << 0) | ((row & 0xffff) << 16);
+            if (adc_val) result.push_back(std::make_pair(encoded_address, adc_val));
         }
     }
     return result;

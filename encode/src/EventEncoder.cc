@@ -88,7 +88,7 @@ std::string EncodedEvent::chip_str(ChipIdentifier identifier) {
         cluster_id++;
     }
     out << "\tHits: ";
-    for(auto hit : chip_matrix.hits()) out << "(col " << hit.first << ", row " << hit.second << ") ";
+    for(auto hit : chip_matrix.hits()) out << "(col " << ((hit.first >> 0) & 0xffff) << ", row " << ((hit.first >> 16) & 0xffff) << ", adc " << hit.second << ") ";
     out << std::endl;
     out << "\tQcores: " << std::endl;
     Encoder enc;
@@ -111,6 +111,7 @@ std::string EncodedEvent::chip_str(ChipIdentifier identifier) {
 
 std::string EncodedEvent::event_str() {
     std::ostringstream out;
+    out << "Event ID raw: " << get_event_id_raw() << std::endl;
     for(auto chip_item : chip_matrices) {
         ChipIdentifier identifier = chip_item.first;
         out << chip_str(identifier);
@@ -213,7 +214,7 @@ EncodedEvent EventEncoder::get_next_event()
                 //module_matrices[tmp_id] = tmp_matrix;
                 module_matrices.emplace (tmp_id_module, tmp_matrix);
             } else {
-                std::cout << "Warning! Module already exists! Event id: " << **trv_event_id << " " << encoded_event.get_event_id_raw() << std::endl;
+                std::cout << "Error! Module already exists! Event id: " << **trv_event_id << " " << encoded_event.get_event_id_raw() << std::endl;
                 tmp_id_module.print();
                 exit(1);
             }
@@ -229,7 +230,7 @@ EncodedEvent EventEncoder::get_next_event()
                     IntMatrix tmp_matrix (nrows_module/2, ncols_module/2);
                     chip_matrices.emplace (tmp_id_chip[chip_id], tmp_matrix);
                 } else {
-                    std::cout << "Warning! Chip already exists! " << std::endl;
+                    std::cout << "Error! Chip already exists! " << std::endl;
                     tmp_id_chip[chip_id].print();
                     exit(1);
                 }
