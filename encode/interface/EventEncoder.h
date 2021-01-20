@@ -113,6 +113,7 @@ class EncodedEvent
 
   public:
     EncodedEvent ();
+    ~EncodedEvent ();
     //EncodedEvent (const EncodedEvent &ev);
     void set_empty(bool pValue) { is_empty_var = pValue; }
     bool is_empty() { return is_empty_var; }
@@ -131,14 +132,11 @@ class EncodedEvent
     void print ();
 
     // setters getters
-    void set_event_id(uint32_t value) { event_id = value; }
-    uint32_t get_event_id() { return event_id; }
     void set_event_id_raw(uint32_t value) { event_id_raw = value; }
     uint32_t get_event_id_raw() { return event_id_raw; }
 
   private:
     bool is_empty_var;
-    uint32_t event_id;
     uint32_t event_id_raw;
     std::map<ChipIdentifier, std::vector<SimpleCluster>> chip_clusters;
     std::map<ChipIdentifier, bool> chip_was_split;
@@ -157,7 +155,7 @@ class EventEncoder
     EventEncoder (std::string pFilename);
     void init_file(std::string pFilename);
     void skip_events(uint32_t pN);
-    EncodedEvent get_next_event();
+    EncodedEvent* get_next_event();
 
   private:
 

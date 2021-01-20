@@ -6,7 +6,7 @@ import psutil
 
 enc = pyrd53.pybindings.EventEncoder("example/itdata.root")
 counter = 0
-for i in range(1):
+for i in range(60):
     print("Event # ", i)
     ev = 0
     print("\tRAM used memory - ", psutil.virtual_memory().percent, "%", ", Swap used memory - ", psutil.swap_memory().percent, "%")
@@ -16,21 +16,26 @@ for i in range(1):
         while (len(ch[1]) > 0):
             # check mistamtch
             raw_hits_with_adc = ev.get_chip_hits(ch[0])
-            raw_hits = []
-            for raw_hit_with_adc in raw_hits_with_adc:
-                raw_hits.append(raw_hit_with_adc[0])
             cluster_hits = []
             for cluster in ev.get_chip_clusters(ch[0]):
                 cluster_hits += cluster.get_hits()
-            match = (len(raw_hits) == len(cluster_hits))
-            if (not match):
+            match = (len(raw_hits_with_adc) == len(cluster_hits))
+            #if (not match):
+            #if (ch[0].mside == 2 and ch[0].mdisk == 11 and ch[0].mring == 4 and ch[0].mmodule == 32):
+            if False:
                 error_string = "Explanation:\n"
-                print("\t\t\tNumber of RAW and Cluster hits does not match, skipping this chip")
-                if len(cluster_hits) > len(raw_hits):
+                #print("\t\t\tNumber of RAW and Cluster hits does not match, skipping this chip")
+                if len(cluster_hits) > len(raw_hits_with_adc):
+                    raw_hits = []
+                    for raw_hit_with_adc in raw_hits_with_adc:
+                        raw_hits.append(raw_hit_with_adc[0])
                     for cluster_hit in cluster_hits:
                         if not (cluster_hit in raw_hits):
                             error_string += ("\t\tCluster: (col " + str((cluster_hit >> 0) & 0xffff) + ", row " + str((cluster_hit >> 16) & 0xffff) + ") not in raw hits\n")
-                else:
+                elif len(cluster_hits) < len(raw_hits_with_adc):
+                    raw_hits = []
+                    for raw_hit_with_adc in raw_hits_with_adc:
+                        raw_hits.append(raw_hit_with_adc[0])
                     for raw_hit in raw_hits:
                         if not (raw_hit in cluster_hits):
                             error_string += ("\t\tRaw hit: (col " + str((raw_hit >> 0) & 0xffff) + ", row " +
@@ -38,7 +43,7 @@ for i in range(1):
                 error_string += ("Event id raw: " + str(ev.get_event_id_raw()) + "\n")
                 error_string += ev.chip_str(ch[0])
                 # write
-                f = open("./failed/event_" + str(counter) + ".txt", "w")
+                f = open("./failed/event_" + str(counter) + "_raw_" + str(ev.get_event_id_raw()) + ".txt", "w")
                 f.write(error_string)
                 f.close()
 
@@ -48,5 +53,6 @@ for i in range(1):
             ch = ev.get_next_chip()
     else:
         break
+print("\tRAM used memory - ", psutil.virtual_memory().percent, "%", ", Swap used memory - ", psutil.swap_memory().percent, "%")
 print("Total: ", counter)
 

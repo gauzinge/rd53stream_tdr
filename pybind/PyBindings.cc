@@ -21,11 +21,14 @@ PYBIND11_MODULE(pybindings, m) {
         .def("get_hits", &SimpleCluster::GetHits);
 
     py::class_<ChipIdentifier>(m, "ChipIdentifier")
-        .def(py::init<uint16_t, uint16_t, uint16_t, uint16_t, uint16_t>());
+        .def(py::init<uint16_t, uint16_t, uint16_t, uint16_t, uint16_t>())
+        .def_readonly("mside", &ChipIdentifier::mside)
+        .def_readonly("mdisk", &ChipIdentifier::mdisk)
+        .def_readonly("mring", &ChipIdentifier::mring)
+        .def_readonly("mmodule", &ChipIdentifier::mmodule);
 
     py::class_<EncodedEvent>(m, "EncodedEvent")
         .def(py::init())
-        .def(py::init<const EncodedEvent &>())
         .def("is_empty", &EncodedEvent::is_empty)
         .def("get_chip_hits", &EncodedEvent::get_chip_hits)
         .def("chip_str", &EncodedEvent::chip_str)
@@ -36,12 +39,11 @@ PYBIND11_MODULE(pybindings, m) {
         .def("get_chip_nclusters", &EncodedEvent::get_chip_nclusters)
         .def("get_chip_clusters", &EncodedEvent::get_chip_clusters)
         .def("get_chip_was_split", &EncodedEvent::get_chip_was_split)
-        .def("get_event_id", &EncodedEvent::get_event_id)
         .def("get_event_id_raw", &EncodedEvent::get_event_id_raw);
 
     py::class_<EventEncoder>(m, "EventEncoder")
         .def(py::init<std::string>())
-        .def("get_next_event", &EventEncoder::get_next_event)
+        .def("get_next_event", &EventEncoder::get_next_event, py::return_value_policy::take_ownership)
         .def("skip_events", &EventEncoder::skip_events);
 
 }

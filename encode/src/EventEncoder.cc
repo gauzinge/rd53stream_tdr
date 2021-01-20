@@ -16,6 +16,15 @@ EncodedEvent::EncodedEvent ()
     is_empty_var = false;
 }
 
+EncodedEvent::~EncodedEvent ()
+{
+    std::cout << "Destructor called" << std::endl;
+    chip_clusters.clear();
+    chip_was_split.clear();
+    chip_matrices.clear();
+    chip_iterator = chip_matrices.end();
+}
+
 /*EncodedEvent::EncodedEvent (const EncodedEvent &ev)
 {
     is_empty_var = bool(ev.is_empty_var);
@@ -54,7 +63,7 @@ std::vector<uint16_t> EncodedEvent::get_stream(std::pair<ChipIdentifier, IntMatr
 
     //create the actual stream for this chip
     std::stringstream ss;
-    std::vector<bool> tmp =  Serializer::serializeChip (qcores, event_id, chip.first.mchip, false, true, ss);
+    std::vector<bool> tmp =  Serializer::serializeChip (qcores, event_id_raw, chip.first.mchip, false, true, ss);
     std::vector<uint16_t> binary_vec = Serializer::toVec<uint16_t> (tmp);
 
     // return
@@ -75,7 +84,8 @@ std::string EncodedEvent::chip_str(ChipIdentifier identifier) {
     IntMatrix chip_matrix = chip_matrices[identifier];
     std::vector<uint16_t> stream = get_stream(std::make_pair(identifier, chip_matrix));
     std::ostringstream out;
-    out << "Side: " << identifier.mside << ", Disk: " << identifier.mdisk << ", Ring: " << identifier.mring << ", Module: " << identifier.mmodule << ", Chip: " << identifier.mchip << std::endl;
+    out << "Event id raw: " << get_event_id_raw();
+    out << " Side: " << identifier.mside << ", Disk: " << identifier.mdisk << ", Ring: " << identifier.mring << ", Module: " << identifier.mmodule << ", Chip: " << identifier.mchip << std::endl;
     out << "\tNumber of clusters: " << chip_clusters[identifier].size() << std::endl;
     int cluster_id = 0;
     for (auto cluster : chip_clusters[identifier]) {
@@ -154,11 +164,10 @@ void EventEncoder::skip_events(uint32_t pN) {
     for (uint32_t i = 0; i < pN; i++) reader->Next();
 }
 
-EncodedEvent EventEncoder::get_next_event()
+EncodedEvent* EventEncoder::get_next_event()
 {
     // create empty encoded event
-    EncodedEvent encoded_event;
-    encoded_event.set_event_id(event_id);
+    EncodedEvent *encoded_event = new EncodedEvent();
 
     // will be used in either case
     // Read all data for this event and construct
@@ -168,6 +177,12 @@ EncodedEvent EventEncoder::get_next_event()
     std::map<ChipIdentifier, std::vector<SimpleCluster>> module_clusters;
     std::map<ChipIdentifier, std::vector<SimpleCluster>> chip_clusters;
     std::map<ChipIdentifier, bool> chip_was_split;
+
+    // make sure everything is empty
+    if (!(module_matrices.empty() && chip_matrices.empty() && module_clusters.empty() && chip_clusters.empty() && chip_was_split.empty())) {
+        std::cout << "Error, some of the just created maps is not empty" << std::endl;
+        exit(1);
+    }
 
     //
     std::cout << "!!! Starting Raw digis read loop" << std::endl;
@@ -180,13 +195,12 @@ EncodedEvent EventEncoder::get_next_event()
         bool raw_success = reader->Next();
         if (!(raw_success)) {
             std::cout << "End of file reached" << std::endl;
-            if (module_counter == 0) encoded_event.set_empty(true);
+            if (module_counter == 0) encoded_event->set_empty(true);
             break;
         }
         // check event id raw
-        //std::cout<< "Module counter: " << module_counter << ", Event id raw: " << encoded_event.get_event_id_raw() << ", From file: " << **trv_event_id << std::endl;
-        if (module_counter == 0) encoded_event.set_event_id_raw(**trv_event_id);
-        else if (encoded_event.get_event_id_raw() != **trv_event_id) { // || module_counter == 100) {
+        if (module_counter == 0) encoded_event->set_event_id_raw(**trv_event_id);
+        else if (encoded_event->get_event_id_raw() != **trv_event_id) {
             //std::cout << "\ttoo far " << encoded_event.get_event_id_raw() << " whereas got: " << **trv_event_id << std::endl;
             isDone = true;
             reader->SetEntry(reader->GetCurrentEntry()-1);
@@ -214,7 +228,7 @@ EncodedEvent EventEncoder::get_next_event()
                 //module_matrices[tmp_id] = tmp_matrix;
                 module_matrices.emplace (tmp_id_module, tmp_matrix);
             } else {
-                std::cout << "Error! Module already exists! Event id: " << **trv_event_id << " " << encoded_event.get_event_id_raw() << std::endl;
+                std::cout << "Error! Module already exists! Event id: " << **trv_event_id << " " << encoded_event->get_event_id_raw() << std::endl;
                 tmp_id_module.print();
                 exit(1);
             }
@@ -286,7 +300,7 @@ EncodedEvent EventEncoder::get_next_event()
         } else break;
 
     }
-    encoded_event.set_chip_matrices(chip_matrices);
+    encoded_event->set_chip_matrices(chip_matrices);
     std::cout << "\t\tFinished reading data for event from the tree; found " << module_matrices.size() << " modules for TEPX" << std::endl;
 
     // now process
@@ -314,18 +328,6 @@ EncodedEvent EventEncoder::get_next_event()
         //
         std::cout << "!!! Starting module splitting" << std::endl;
 
-        //now split the tmp_matrix  for each module in 4 chip matrices, construct the Chip identifier object and insert into the matrices map
-        /*for (auto matrix : module_matrices)
-        {
-            for (uint32_t chip = 0; chip < 4; chip++)
-            {
-                ChipIdentifier chipId (matrix.first.mside, matrix.first.mdisk, matrix.first.mring, matrix.first.mmodule, chip);
-                IntMatrix tmp_matrix = matrix.second.submatrix (chip);
-                if ( tmp_matrix.hits().size() > 0 ) chip_matrices.emplace (chipId, tmp_matrix);
-            }
-        }
-        encoded_event.set_chip_matrices(chip_matrices);*/
-
         // now chip clusters
         for (auto current_module : module_clusters)
         {
@@ -345,8 +347,8 @@ EncodedEvent EventEncoder::get_next_event()
                 }
             }
         }
-        encoded_event.set_chip_clusters(chip_clusters);
-        encoded_event.set_chip_split(chip_was_split);
+        encoded_event->set_chip_clusters(chip_clusters);
+        encoded_event->set_chip_split(chip_was_split);
 
         std::cout << "\tFinished picking apart modules; converted " << module_matrices.size() << " modules for TEPX to " << chip_matrices.size() << " chips" << std::endl;
 
