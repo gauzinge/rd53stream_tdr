@@ -29,6 +29,7 @@ PYBIND11_MODULE(pybindings, m) {
         .def("is_empty", &EncodedEvent::is_empty)
         .def("get_chip_hits", &EncodedEvent::get_chip_hits)
         .def("chip_str", &EncodedEvent::chip_str)
+        .def("event_str", &EncodedEvent::event_str)
         .def("print", &EncodedEvent::print)
         .def("get_next_chip", &EncodedEvent::get_next_chip)
         .def("get_stream_by_id", &EncodedEvent::get_stream_by_id)

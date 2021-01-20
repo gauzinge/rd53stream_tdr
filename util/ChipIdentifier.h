@@ -153,4 +153,11 @@ inline bool operator < (const ChipIdentifier& obj1, const ChipIdentifier& obj2)
     else if (obj1.mmodule != obj2.mmodule) return obj1.mmodule < obj2.mmodule;
     else return obj1.mchip < obj2.mchip;
 }
+
+inline bool operator == (const ChipIdentifier& obj1, const ChipIdentifier& obj2)
+{
+    return (obj1.mside == obj2.mside) && (obj1.mdisk == obj2.mdisk) && (obj1.mring == obj2.mring) && (obj1.mmodule == obj2.mmodule) && (obj1.mchip == obj2.mchip);
+}
+
+
 #endif

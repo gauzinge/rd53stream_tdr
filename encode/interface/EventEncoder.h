@@ -127,6 +127,7 @@ class EncodedEvent
     std::vector<SimpleCluster> get_chip_clusters(ChipIdentifier identifier) { return chip_clusters[identifier]; }
     bool get_chip_was_split(ChipIdentifier identifier) { return chip_was_split[identifier]; }
     std::string chip_str(ChipIdentifier identifier);
+    std::string event_str();
     void print ();
 
     // setters getters

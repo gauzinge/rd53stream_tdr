@@ -109,11 +109,17 @@ std::string EncodedEvent::chip_str(ChipIdentifier identifier) {
     return out.str();
 }
 
-void EncodedEvent::print() {
+std::string EncodedEvent::event_str() {
+    std::ostringstream out;
     for(auto chip_item : chip_matrices) {
         ChipIdentifier identifier = chip_item.first;
-        std::cout << chip_str(identifier);
+        out << chip_str(identifier);
     }
+    return out.str();
+}
+
+void EncodedEvent::print() {
+    std::cout << event_str();
 }
 
 EventEncoder::EventEncoder (std::string pFilename)
@@ -172,6 +178,7 @@ EncodedEvent EventEncoder::get_next_event()
         // check that we have some data
         bool raw_success = reader->Next();
         if (!(raw_success)) {
+            std::cout << "End of file reached" << std::endl;
             if (module_counter == 0) encoded_event.set_empty(true);
             break;
         }
@@ -179,101 +186,104 @@ EncodedEvent EventEncoder::get_next_event()
         //std::cout<< "Module counter: " << module_counter << ", Event id raw: " << encoded_event.get_event_id_raw() << ", From file: " << **trv_event_id << std::endl;
         if (module_counter == 0) encoded_event.set_event_id_raw(**trv_event_id);
         else if (encoded_event.get_event_id_raw() != **trv_event_id) { // || module_counter == 100) {
+            //std::cout << "\ttoo far " << encoded_event.get_event_id_raw() << " whereas got: " << **trv_event_id << std::endl;
             isDone = true;
             reader->SetEntry(reader->GetCurrentEntry()-1);
         }
-        module_counter++;
 
-        // module loop within event
-        uint32_t side = *trv_side->Get();
-        uint32_t disk = *trv_disk->Get();
-        uint32_t ring = *trv_ring->Get();
-        uint32_t module = *trv_module->Get();
+        if (!isDone) {
+            module_counter++;
 
-        /*if(side*disk != 9 || ring != 3 || module != 20) {
-            if (isDone) break;
-            else continue;
-        }
-        else std::cout << "Got it" << std::endl;*/
+            // module loop within event
+            uint32_t side = *trv_side->Get();
+            uint32_t disk = *trv_disk->Get();
+            uint32_t ring = *trv_ring->Get();
+            uint32_t module = *trv_module->Get();
 
-        //generate a temporary chip identifier with fake chip id 99 since for the moment we just care for the module
-        ChipIdentifier tmp_id_module(side, disk, ring, module, 99);
-        auto matrices_iterator = module_matrices.find (tmp_id_module);
-        if (matrices_iterator == std::end (module_matrices) ) // not found
-        {
-            //insert an empty IntMatrix
-            IntMatrix tmp_matrix (nrows_module, ncols_module);
-            //module_matrices[tmp_id] = tmp_matrix;
-            module_matrices.emplace (tmp_id_module, tmp_matrix);
-        } else {
-            std::cout << "Warning! Module already exists! " << std::endl;
-            tmp_id_module.print();
-        }
+            //if((**trv_event_id == 48 || **trv_event_id == 54) && (side == 2 && disk == 11 && ring == 4 && module == 32)) {
+            //if((**trv_event_id > 40 && **trv_event_id < 60)) {
 
-        ChipIdentifier tmp_id_chip[4];
-        for(uint32_t chip_id = 0; chip_id < 4; chip_id++) {
-            tmp_id_chip[chip_id] = ChipIdentifier(side, disk, ring, module, chip_id);
-            //check if that module is already in our map
-            auto matrices_iterator = chip_matrices.find (tmp_id_chip[chip_id]);
-            if (matrices_iterator == std::end (chip_matrices) ) // not found
+            //generate a temporary chip identifier with fake chip id 99 since for the moment we just care for the module
+            ChipIdentifier tmp_id_module(side, disk, ring, module, 99);
+            auto matrices_iterator = module_matrices.find (tmp_id_module);
+            if (matrices_iterator == std::end (module_matrices) ) // not found
             {
                 //insert an empty IntMatrix
-                IntMatrix tmp_matrix (nrows_module/2, ncols_module/2);
-                chip_matrices.emplace (tmp_id_chip[chip_id], tmp_matrix);
+                IntMatrix tmp_matrix (nrows_module, ncols_module);
+                //module_matrices[tmp_id] = tmp_matrix;
+                module_matrices.emplace (tmp_id_module, tmp_matrix);
             } else {
-                std::cout << "Warning! Chip already exists! " << std::endl;
-                tmp_id_chip[chip_id].print();
+                std::cout << "Warning! Module already exists! Event id: " << **trv_event_id << " " << encoded_event.get_event_id_raw() << std::endl;
+                tmp_id_module.print();
+                exit(1);
             }
-        }
 
-        //in all other cases the Intmatrix for that module exists already
-        uint32_t ientry = 0;
-        while (ientry < trv_row->GetSize()) {
-            //get the row, col and ADC (attention, sensor row and column address) for the current module
-            uint32_t row = trv_row->At (ientry);
-            uint32_t col = trv_col->At (ientry);
-            uint32_t adc = trv_adc->At (ientry);
-
-            uint32_t chip_id = 0;
-            if (row < nrows_module/2) {
-                if (col < ncols_module/2) {
-                    chip_id = 0;
-                } else if (col >= ncols_module/2 && col < ncols_module) {
-                    chip_id = 1;
-                } else chip_id = 4;
-            } else if (row >= nrows_module/2 && row < nrows_module) {
-                if (col < ncols_module/2) {
-                    chip_id = 2;
+            ChipIdentifier tmp_id_chip[4];
+            for(uint32_t chip_id = 0; chip_id < 4; chip_id++) {
+                tmp_id_chip[chip_id] = ChipIdentifier(side, disk, ring, module, chip_id);
+                //check if that module is already in our map
+                auto matrices_iterator = chip_matrices.find (tmp_id_chip[chip_id]);
+                if (matrices_iterator == std::end (chip_matrices) ) // not found
+                {
+                    //insert an empty IntMatrix
+                    IntMatrix tmp_matrix (nrows_module/2, ncols_module/2);
+                    chip_matrices.emplace (tmp_id_chip[chip_id], tmp_matrix);
+                } else {
+                    std::cout << "Warning! Chip already exists! " << std::endl;
+                    tmp_id_chip[chip_id].print();
+                    exit(1);
                 }
-                else if (col >= ncols_module/2 && col < ncols_module) {
-                    chip_id = 3;
-                } else chip_id = 4;
-            } else chip_id = 5;
-
-            // append
-            module_matrices.at (tmp_id_module).fill (row, col, adc);
-            if(chip_id < 4) chip_matrices.at (tmp_id_chip[chip_id]).fill (row % (nrows_module/2), col % (ncols_module/2), adc);
-
-            // increment
-            ientry++;
-        }
-
-        // module clusters
-        ientry = 0;
-        while(ientry < trv_clusters->GetSize()) {
-            std::vector<int> cluster_hit_vec = trv_clusters->At(ientry);
-            std::map<ChipIdentifier, std::vector<SimpleCluster>>::iterator it = module_clusters.find(tmp_id_module);
-            if(it != module_clusters.end()) {
-                it->second.push_back(SimpleCluster(nrows_module,ncols_module,cluster_hit_vec));
-            } else {
-                std::vector<SimpleCluster> tmp;
-                tmp.push_back(SimpleCluster(nrows_module,ncols_module,cluster_hit_vec));
-                module_clusters[tmp_id_module] = tmp;
             }
-            ientry++;
-        }
 
-        if (isDone) break;
+            //in all other cases the Intmatrix for that module exists already
+            uint32_t ientry = 0;
+            while (ientry < trv_row->GetSize()) {
+                //get the row, col and ADC (attention, sensor row and column address) for the current module
+                uint32_t row = trv_row->At (ientry);
+                uint32_t col = trv_col->At (ientry);
+                uint32_t adc = trv_adc->At (ientry);
+
+                uint32_t chip_id = 0;
+                if (row < nrows_module/2) {
+                    if (col < ncols_module/2) {
+                        chip_id = 0;
+                    } else if (col >= ncols_module/2 && col < ncols_module) {
+                        chip_id = 1;
+                    } else chip_id = 4;
+                } else if (row >= nrows_module/2 && row < nrows_module) {
+                    if (col < ncols_module/2) {
+                        chip_id = 2;
+                    }
+                    else if (col >= ncols_module/2 && col < ncols_module) {
+                        chip_id = 3;
+                    } else chip_id = 4;
+                } else chip_id = 5;
+
+                // append
+                module_matrices.at (tmp_id_module).fill (row, col, adc);
+                if(chip_id < 4) chip_matrices.at (tmp_id_chip[chip_id]).fill (row % (nrows_module/2), col % (ncols_module/2), adc);
+
+                // increment
+                ientry++;
+            }
+
+            // module clusters
+            ientry = 0;
+            while(ientry < trv_clusters->GetSize()) {
+                std::vector<int> cluster_hit_vec = trv_clusters->At(ientry);
+                std::map<ChipIdentifier, std::vector<SimpleCluster>>::iterator it = module_clusters.find(tmp_id_module);
+                if(it != module_clusters.end()) {
+                    it->second.push_back(SimpleCluster(nrows_module,ncols_module,cluster_hit_vec));
+                } else {
+                    std::vector<SimpleCluster> tmp;
+                    tmp.push_back(SimpleCluster(nrows_module,ncols_module,cluster_hit_vec));
+                    module_clusters[tmp_id_module] = tmp;
+                }
+                ientry++;
+            }
+            //}
+        } else break;
+
     }
     encoded_event.set_chip_matrices(chip_matrices);
     std::cout << "\t\tFinished reading data for event from the tree; found " << module_matrices.size() << " modules for TEPX" << std::endl;
@@ -345,5 +355,7 @@ EncodedEvent EventEncoder::get_next_event()
     event_id++;
 
     // return
+    //if ((encoded_event.get_event_id_raw() > 40 && encoded_event.get_event_id_raw() < 60) || encoded_event.is_empty()) return encoded_event;
+    //else return get_next_event();
     return encoded_event;
 }
