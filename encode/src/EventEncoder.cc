@@ -164,7 +164,21 @@ void EventEncoder::skip_events(uint32_t pN) {
     for (uint32_t i = 0; i < pN; i++) reader->Next();
 }
 
-EncodedEvent* EventEncoder::get_next_event()
+EncodedEvent* EventEncoder::get_single_module_event(uint32_t pEventId, ChipIdentifier pModuleId)
+{
+    // first find needed event
+    reader->Restart();
+    bool success = reader->Next();
+    while(success) {
+        if(**trv_event_id == pEventId && **trv_side == pModuleId.mside && **trv_disk == pModuleId.mdisk && **trv_ring == pModuleId.mring && **trv_module == pModuleId.mmodule) break;
+        else success = reader->Next();
+    }
+    reader->SetEntry(reader->GetCurrentEntry()-1);
+    // now get it
+    return get_next_event(true);
+}
+
+EncodedEvent* EventEncoder::get_next_event(bool pDoSingle = false)
 {
     // create empty encoded event
     EncodedEvent *encoded_event = new EncodedEvent();
@@ -299,6 +313,7 @@ EncodedEvent* EventEncoder::get_next_event()
             //}
         } else break;
 
+        if (pDoSingle) break;
     }
     encoded_event->set_chip_matrices(chip_matrices);
     std::cout << "\t\tFinished reading data for event from the tree; found " << module_matrices.size() << " modules for TEPX" << std::endl;

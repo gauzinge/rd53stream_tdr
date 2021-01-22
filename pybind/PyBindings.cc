@@ -23,6 +23,7 @@ PYBIND11_MODULE(pybindings, m) {
     py::class_<ChipIdentifier>(m, "ChipIdentifier")
         .def(py::init<uint16_t, uint16_t, uint16_t, uint16_t, uint16_t>())
         .def("identifier_str", &ChipIdentifier::identifier_str)
+        .def("print", &ChipIdentifier::print)
         .def_readonly("mside", &ChipIdentifier::mside)
         .def_readonly("mdisk", &ChipIdentifier::mdisk)
         .def_readonly("mring", &ChipIdentifier::mring)
@@ -46,6 +47,7 @@ PYBIND11_MODULE(pybindings, m) {
     py::class_<EventEncoder>(m, "EventEncoder")
         .def(py::init<std::string>())
         .def("get_next_event", &EventEncoder::get_next_event, py::return_value_policy::take_ownership)
+        .def("get_single_module_event", &EventEncoder::get_single_module_event, py::return_value_policy::take_ownership)
         .def("skip_events", &EventEncoder::skip_events);
 
 }
