@@ -5,3 +5,5 @@ obj/
 bin/
 pyrd53
 *root
+failed
+processed_streams

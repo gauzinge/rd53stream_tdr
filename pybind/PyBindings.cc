@@ -22,10 +22,12 @@ PYBIND11_MODULE(pybindings, m) {
 
     py::class_<ChipIdentifier>(m, "ChipIdentifier")
         .def(py::init<uint16_t, uint16_t, uint16_t, uint16_t, uint16_t>())
+        .def("identifier_str", &ChipIdentifier::identifier_str)
         .def_readonly("mside", &ChipIdentifier::mside)
         .def_readonly("mdisk", &ChipIdentifier::mdisk)
         .def_readonly("mring", &ChipIdentifier::mring)
-        .def_readonly("mmodule", &ChipIdentifier::mmodule);
+        .def_readonly("mmodule", &ChipIdentifier::mmodule)
+        .def_readonly("mchip", &ChipIdentifier::mchip);
 
     py::class_<EncodedEvent>(m, "EncodedEvent")
         .def(py::init())

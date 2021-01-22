@@ -2,6 +2,7 @@
 #define CHIPIDENTIFIER_H__
 
 #include<iostream>
+#include <sstream>
 
 class ChipIdentifier
 {
@@ -104,6 +105,13 @@ class ChipIdentifier
     void print() const
     {
         std::cout << "S " << mside << " D " << mdisk << " R " << mring << " M " << mmodule <<   " Q " << mquarter << " DTC " << mdtc << " C " << mchip << " ; " << mlinkfactor << std::endl;
+    }
+
+    std::string identifier_str()
+    {
+        std::ostringstream out;
+        out << "s_" << mside << "_d_" << mdisk << "_r_" << mring << "_m_" << mmodule << "_c_" << mchip;
+        return out.str();
     }
 
     //encode the disk, ring, module, # of chips in a word of type T
