@@ -178,7 +178,7 @@ EncodedEvent* EventEncoder::get_single_module_event(uint32_t pEventId, ChipIdent
     return get_next_event(true);
 }
 
-EncodedEvent* EventEncoder::get_next_event(bool pDoSingle = false)
+EncodedEvent* EventEncoder::get_next_event(bool pDoSingle)
 {
     // create empty encoded event
     EncodedEvent *encoded_event = new EncodedEvent();

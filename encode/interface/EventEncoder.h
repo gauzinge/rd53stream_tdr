@@ -155,7 +155,7 @@ class EventEncoder
     EventEncoder (std::string pFilename);
     void init_file(std::string pFilename);
     void skip_events(uint32_t pN);
-    EncodedEvent* get_next_event(bool pDoSingle);
+    EncodedEvent* get_next_event(bool pDoSingle = false);
     EncodedEvent* get_single_module_event(uint32_t pEventId, ChipIdentifier pModuleId);
 
   private:
