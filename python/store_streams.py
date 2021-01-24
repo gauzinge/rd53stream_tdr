@@ -18,6 +18,8 @@ else:
     if os.path.exists(outputfolder):
         shutil.rmtree(outputfolder)
     os.mkdir(outputfolder)
+    os.mkdir(outputfolder+"/skipped_more_cluster_hits")
+    os.mkdir(outputfolder+"/skipped_more_raw_hits")
     # start
     event_counter = 0
     chip_counter = 0
@@ -37,6 +39,32 @@ else:
                 match = (len(raw_hits_with_adc) == len(cluster_hits))
                 if (not match):
                     print("\t\tNumber of RAW and Cluster hits does not match, skipping this chip")
+                    error_string = "Explanation:\n"
+                    if len(cluster_hits) > len(raw_hits_with_adc):
+                        address_prefix = outputfolder + "/skipped_more_cluster_hits"
+                        raw_hits = []
+                        for raw_hit_with_adc in raw_hits_with_adc:
+                            raw_hits.append(raw_hit_with_adc[0])
+                        for cluster_hit in cluster_hits:
+                            if not (cluster_hit in raw_hits):
+                                error_string += (
+                                            "\t\tCluster: (col " + str((cluster_hit >> 0) & 0xffff) + ", row " + str(
+                                        (cluster_hit >> 16) & 0xffff) + ") not in raw hits\n")
+                    elif len(cluster_hits) < len(raw_hits_with_adc):
+                        address_prefix = outputfolder + "/skipped_more_raw_hits"
+                        raw_hits = []
+                        for raw_hit_with_adc in raw_hits_with_adc:
+                            raw_hits.append(raw_hit_with_adc[0])
+                        for raw_hit in raw_hits:
+                            if not (raw_hit in cluster_hits):
+                                error_string += ("\t\tRaw hit: (col " + str((raw_hit >> 0) & 0xffff) + ", row " +
+                                                 str((raw_hit >> 16) & 0xffff) + ") not in cluster hits\n")
+                    error_string += ("Event id raw: " + str(ev.get_event_id_raw()) + "\n")
+                    error_string += ev.chip_str(ch[0])
+                    # write
+                    f = open(address_prefix + "/eventraw_" + str(ev.get_event_id_raw()) + ch[0].identifier_str() + ".txt", "w")
+                    f.write(error_string)
+                    f.close()
                     skip_counter += 1
                 else:
                     f = open(outputfolder+"/stream_"+ch[0].identifier_str()+".txt", "a")
@@ -61,8 +89,8 @@ else:
         if nevents > 0 and event_counter >= nevents:
             break
     info_string = ("Processing done. Total events: " + str(event_counter) + ". Total chips: " + str(chip_counter) + "\n")
-    info_string += ("Chips had split: " + str(split_counter) + "\n")
-    info_string += ("Chips skipped: " + str(skip_counter) + "\n")
+    info_string += ("Chips had split: " + str(split_counter) + " (" + str(split_counter*100/chip_counter) + "%)\n")
+    info_string += ("Chips skipped: " + str(skip_counter) + " (" + str(skip_counter*100/(chip_counter+skip_counter)) + "%)\n")
     print(info_string)
     f = open(outputfolder + "/00_info.txt", "w+")
     f.write(info_string)
