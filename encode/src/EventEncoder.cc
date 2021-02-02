@@ -266,11 +266,12 @@ EncodedEvent* EventEncoder::get_next_event(bool pDoSingle)
 
             //in all other cases the Intmatrix for that module exists already
             uint32_t ientry = 0;
+            uint32_t digis_size = trv_row->GetSize();
             while (ientry < trv_row->GetSize()) {
                 //get the row, col and ADC (attention, sensor row and column address) for the current module
                 uint32_t row = trv_row->At (ientry);
                 uint32_t col = trv_col->At (ientry);
-                uint32_t adc = trv_adc->At (ientry);
+                uint32_t adc = trv_adc->At (ientry) + 1;
 
                 uint32_t chip_id = 0;
                 if (row < nrows_module/2) {
@@ -298,8 +299,10 @@ EncodedEvent* EventEncoder::get_next_event(bool pDoSingle)
 
             // module clusters
             ientry = 0;
+            uint32_t cluster_digis_size = 0;
             while(ientry < trv_clusters->GetSize()) {
                 std::vector<int> cluster_hit_vec = trv_clusters->At(ientry);
+                cluster_digis_size += cluster_hit_vec.size();
                 std::map<ChipIdentifier, std::vector<SimpleCluster>>::iterator it = module_clusters.find(tmp_id_module);
                 if(it != module_clusters.end()) {
                     it->second.push_back(SimpleCluster(nrows_module,ncols_module,cluster_hit_vec));
@@ -311,6 +314,10 @@ EncodedEvent* EventEncoder::get_next_event(bool pDoSingle)
                 ientry++;
             }
             //}
+
+            /*if (digis_size < cluster_digis_size) std::cout << "Extra hits in clusters" << std::endl;
+            else if (digis_size > cluster_digis_size) std::cout << "Extra hits in digis" << std::endl;*/
+
         } else break;
 
         if (pDoSingle) break;

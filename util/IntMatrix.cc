@@ -68,32 +68,6 @@ void IntMatrix::fill(uint32_t row, uint32_t col, uint32_t adc)
     //}
 }
 
-//for some weird reason the digis have larger row and col numbers than the actual chip
-void IntMatrix::convertPitch_andFill(uint32_t row, uint32_t col, uint32_t adc)
-{
-    uint32_t arow=0;
-    uint32_t acol = 0;
-    if(row%2 == 0)//this is a simple check if row is an even number, alternative (row%2 == 0)
-    {
-        arow=row/2;
-        acol =2*col+1;
-    }
-    else// odd row number
-    {
-        arow=(row-1)/2;
-        acol=2*col;
-    }
-
-    //assert(row < this->rows);
-    //assert(col < this->cols);
-    //if(arow > this->rows)
-    //std::cout << "Warning, row " << arow << " larger than matrix: " <<rows << std::endl;
-    //if(acol > this->cols)
-    //std::cout << "Warning, col " << acol << " larger than matrix: " <<cols << std::endl;
-    if(arow < this->rows && acol < this->cols)
-        this->data[arow][acol]=adc;
-}
-
 uint32_t IntMatrix::value(uint32_t row, uint32_t col)
 {
     assert(row < this->rows);
