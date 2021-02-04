@@ -1,6 +1,6 @@
 IDIR=.
 CC=g++
-CFLAGS=-I$(IDIR) -std=c++11 `root-config --cflags --glibs` -g -fpermissive
+CFLAGS=-I$(IDIR) -std=c++11 `root-config --cflags --glibs` -ggdb -Wall -Wextra -pedantic -fpermissive
 
 INCDIR=interface
 LIBS=-lm

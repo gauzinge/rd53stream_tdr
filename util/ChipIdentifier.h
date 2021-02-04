@@ -8,116 +8,137 @@ class ChipIdentifier
 {
   public:
     ChipIdentifier () :
-        mside (99),
-        mdisk (99),
-        mring (99),
-        mmodule (99),
-        mchip (99)
-    {;}
+      mside (99),
+      mdisk (99),
+      mring (99),
+      mmodule (99),
+      mchip (99)
+  {;}
 
     ChipIdentifier (uint32_t side, uint32_t disk, uint32_t ring, uint32_t module, uint32_t chip) :
-        mside (side),
-        mdisk (disk),
-        mring (ring),
-        mmodule (module),
-        mchip (chip)
+      mside (side),
+      mdisk (disk),
+      mring (ring),
+      mmodule (module),
+      mchip (chip)
+  {
+    if (mring == 1)
     {
-        if (mring == 1)
-        {
-            if (mmodule <= 5) mquarter = 1;
-            else if (mmodule > 5  && mmodule <= 10) mquarter = 2;
-            else if (mmodule > 10 && mmodule <= 15) mquarter = 3;
-            else mquarter = 4;
-        }
+      if (mmodule <= 5) mquarter = 1;
+      else if (mmodule > 5  && mmodule <= 10) mquarter = 2;
+      else if (mmodule > 10 && mmodule <= 15) mquarter = 3;
+      else mquarter = 4;
+    }
 
-        if (mring == 2)
-        {
-            if (mmodule <= 7) mquarter = 1;
-            else if (mmodule > 7  && mmodule <= 14) mquarter = 2;
-            else if (mmodule > 14 && mmodule <= 21) mquarter = 3;
-            else mquarter = 4;
-        }
+    if (mring == 2)
+    {
+      if (mmodule <= 7) mquarter = 1;
+      else if (mmodule > 7  && mmodule <= 14) mquarter = 2;
+      else if (mmodule > 14 && mmodule <= 21) mquarter = 3;
+      else mquarter = 4;
+    }
 
-        if (mring == 3)
-        {
-            if (mmodule <= 9) mquarter = 1;
-            else if (mmodule > 9  && mmodule <= 18) mquarter = 2;
-            else if (mmodule > 18 && mmodule <= 27) mquarter = 3;
-            else mquarter = 4;
-        }
+    if (mring == 3)
+    {
+      if (mmodule <= 9) mquarter = 1;
+      else if (mmodule > 9  && mmodule <= 18) mquarter = 2;
+      else if (mmodule > 18 && mmodule <= 27) mquarter = 3;
+      else mquarter = 4;
+    }
 
-        if (mring == 4)
-        {
-            if (mmodule <= 11) mquarter = 1;
-            else if (mmodule > 11  && mmodule <= 22) mquarter = 2;
-            else if (mmodule > 22 && mmodule <= 33) mquarter = 3;
-            else mquarter = 4;
-        }
+    if (mring == 4)
+    {
+      if (mmodule <= 11) mquarter = 1;
+      else if (mmodule > 11  && mmodule <= 22) mquarter = 2;
+      else if (mmodule > 22 && mmodule <= 33) mquarter = 3;
+      else mquarter = 4;
+    }
 
-        if (mring == 5)
-        {
-            if (mmodule <= 12) mquarter = 1;
-            else if (mmodule > 12  && mmodule <= 24) mquarter = 2;
-            else if (mmodule > 24 && mmodule <= 36) mquarter = 3;
-            else mquarter = 4;
-        }
+    if (mring == 5)
+    {
+      if (mmodule <= 12) mquarter = 1;
+      else if (mmodule > 12  && mmodule <= 24) mquarter = 2;
+      else if (mmodule > 24 && mmodule <= 36) mquarter = 3;
+      else mquarter = 4;
+    }
 
-        //convention: if disk = 9 or disk = 10 and quarter =1 or quarter = 2 -> DTC = 1
-        //               disk = 11or disk = 12 and quarter =1 or quarter = 2 -> DTC = 2
-        //               disk = 9 or disk = 10 and quarter =3 or quarter = 4 -> DTC = 3
-        //               disk = 11or disk = 12 and quarter =3 or quarter = 4 -> DTC = 4
-        //side in file is always +z
-        if (mdisk < 11)
-        {
-            if (mquarter == 1 || mquarter == 2) mdtc = 1;
-            else mdtc = 3;
-        }
-        else if (mdisk > 10 && mdisk <= 12)
-        {
-            if (mquarter == 1 || mquarter == 2) mdtc = 2;
-            else mdtc = 4;
-        }
+    //convention: if disk = 9 or disk = 10 and quarter =1 or quarter = 2 -> DTC = 1
+    //               disk = 11or disk = 12 and quarter =1 or quarter = 2 -> DTC = 2
+    //               disk = 9 or disk = 10 and quarter =3 or quarter = 4 -> DTC = 3
+    //               disk = 11or disk = 12 and quarter =3 or quarter = 4 -> DTC = 4
+    //side in file is always +z
+    if (mside == 1)
+    {
+      if (mdisk < 11)
+      {
+        if (mquarter == 1 || mquarter == 2) mdtc = 1;
+        else mdtc = 3;
+      }
+      else if (mdisk > 10 && mdisk <= 12)
+      {
+        if (mquarter == 1 || mquarter == 2) mdtc = 2;
+        else mdtc = 4;
+      }
 
-        //Override assignment specifically for D4R1 which will be connected to it's own DTC
-        if (mdisk == 12 && mring == 1)
-            mdtc = 5;
+      //Override assignment specifically for D4R1 which will be connected to it's own DTC
+      if (mdisk == 12 && mring == 1)
+        mdtc = 5;
+    }
+    else
+    {
+      if (mdisk < 11)
+      {
+        if (mquarter == 1 || mquarter == 2) mdtc = 11;
+        else mdtc = 33;
+      }
+      else if (mdisk > 10 && mdisk <= 12)
+      {
+        if (mquarter == 1 || mquarter == 2) mdtc = 22;
+        else mdtc = 44;
+      }
 
-        if (mchip == 99) mlinkfactor = 99;
-        else if (ring == 1 && (chip == 0 || chip == 1) ) mlinkfactor = 1.;
-        else if (ring == 1 && (chip == 2 || chip == 3) ) mlinkfactor = .5;
-        else if (ring == 2) mlinkfactor = .5;
-        else if (ring > 2 ) mlinkfactor = .25;
+      //Override assignment specifically for D4R1 which will be connected to it's own DTC
+      if (mdisk == 12 && mring == 1)
+        mdtc = 55;
 
     }
 
+    if (mchip == 99) mlinkfactor = 99;
+    else if (ring == 1 && (chip == 0 || chip == 1) ) mlinkfactor = 1.;
+    else if (ring == 1 && (chip == 2 || chip == 3) ) mlinkfactor = .5;
+    else if (ring == 2) mlinkfactor = .5;
+    else if (ring > 2 ) mlinkfactor = .25;
+
+  }
+
     // copy constructur
     ChipIdentifier (const ChipIdentifier &identifier) {
-        mside = identifier.mside;
-        mdisk = identifier.mdisk;
-        mring = identifier.mring;
-        mmodule = identifier.mmodule;
-        mchip = identifier.mchip;
-        mquarter = identifier.mquarter;
-        mdtc = identifier.mdtc;
-        mlinkfactor = identifier.mlinkfactor;
+      mside = identifier.mside;
+      mdisk = identifier.mdisk;
+      mring = identifier.mring;
+      mmodule = identifier.mmodule;
+      mchip = identifier.mchip;
+      mquarter = identifier.mquarter;
+      mdtc = identifier.mdtc;
+      mlinkfactor = identifier.mlinkfactor;
     }
 
     void print() const
     {
-        std::cout << "S " << mside << " D " << mdisk << " R " << mring << " M " << mmodule <<   " Q " << mquarter << " DTC " << mdtc << " C " << mchip << " ; " << mlinkfactor << std::endl;
+      std::cout << "S " << mside << " D " << mdisk << " R " << mring << " M " << mmodule <<   " Q " << mquarter << " DTC " << mdtc << " C " << mchip << " ; " << mlinkfactor << std::endl;
     }
 
     std::string identifier_str()
     {
-        std::ostringstream out;
-        out << "s_" << mside << "_d_" << mdisk << "_r_" << mring << "_m_" << mmodule << "_c_" << mchip;
-        return out.str();
+      std::ostringstream out;
+      out << "s_" << mside << "_d_" << mdisk << "_r_" << mring << "_m_" << mmodule << "_c_" << mchip;
+      return out.str();
     }
 
     //encode the disk, ring, module, # of chips in a word of type T
     template<typename T>
-    T encode() const
-    {
+      T encode() const
+      {
         //assert (sizeof (T) * 8 >= 16); //?
         uint16_t word = 0;
 
@@ -137,7 +158,7 @@ class ChipIdentifier
 
         //}
 
-    }
+      }
 
     //protected:
     uint32_t mside;
@@ -155,16 +176,16 @@ class ChipIdentifier
 
 inline bool operator < (const ChipIdentifier& obj1, const ChipIdentifier& obj2)
 {
-    if (obj1.mside != obj2.mside) return obj1.mside < obj2.mside;
-    else if (obj1.mdisk != obj2.mdisk) return obj1.mdisk < obj2.mdisk;
-    else if (obj1.mring != obj2.mring) return obj1.mring < obj2.mring;
-    else if (obj1.mmodule != obj2.mmodule) return obj1.mmodule < obj2.mmodule;
-    else return obj1.mchip < obj2.mchip;
+  if (obj1.mside != obj2.mside) return obj1.mside < obj2.mside;
+  else if (obj1.mdisk != obj2.mdisk) return obj1.mdisk < obj2.mdisk;
+  else if (obj1.mring != obj2.mring) return obj1.mring < obj2.mring;
+  else if (obj1.mmodule != obj2.mmodule) return obj1.mmodule < obj2.mmodule;
+  else return obj1.mchip < obj2.mchip;
 }
 
 inline bool operator == (const ChipIdentifier& obj1, const ChipIdentifier& obj2)
 {
-    return (obj1.mside == obj2.mside) && (obj1.mdisk == obj2.mdisk) && (obj1.mring == obj2.mring) && (obj1.mmodule == obj2.mmodule) && (obj1.mchip == obj2.mchip);
+  return (obj1.mside == obj2.mside) && (obj1.mdisk == obj2.mdisk) && (obj1.mring == obj2.mring) && (obj1.mmodule == obj2.mmodule) && (obj1.mchip == obj2.mchip);
 }
 
 

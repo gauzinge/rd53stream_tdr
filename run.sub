@@ -1,0 +1,19 @@
+infile              = /afs/cern.ch/user/g/gauzinge/itdata_PU200.root
+NEvents             = 1000
+
+executable          = runEncoder.sh
+arguments           = $(infile) $(NEvents)
+output              = batchlog/runEncoder.$(ClusterId).$(ProcId).out
+error               = batchlog/runEncoder.$(ClusterId).$(ProcId).err
+log                 = batchlog/runEncoder.$(ClusterId).log
+#getenv              = True
+#request_cpus        = 1
+requirements = (OpSysAndVer =?= "CentOS7")
+stream_output = True
+stream_error = True
++SpoolOnEvict = False
+
+
++JobFlavour        = "nextweek"
++BenchmarkJob = True
+queue
